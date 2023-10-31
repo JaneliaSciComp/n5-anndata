@@ -15,7 +15,7 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 	private final int secondaryDim;
 	private final T fillValue;
 
-	private SparseImg<T,?> img = null;
+	private SparseArray<T,?> img = null;
 	private Cursor<T> dataCursor;
 	private Cursor<? extends IntegerType<?>> indicesCursor;
 	private RandomAccess<? extends IntegerType<?>> indptrAccess;
@@ -36,7 +36,7 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 		secondaryDim = 0;
 	}
 
-	public SparseLocalizingCursor(SparseImg<T,?> img, int leadingDimension, T fillValue) {
+	public SparseLocalizingCursor(SparseArray<T,?> img, int leadingDimension, T fillValue) {
 		super(img.numDimensions());
 		if (n != 2)
 			throw new IllegalArgumentException("Only 2D images are supported");

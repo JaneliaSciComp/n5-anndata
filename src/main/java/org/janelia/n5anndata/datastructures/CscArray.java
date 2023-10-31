@@ -9,11 +9,11 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 
-public class SparseCSCImg<
+public class CscArray<
 		D extends NumericType<D> & NativeType<D>,
-		I extends IntegerType<I> & NativeType<I>> extends SparseImg<D, I> {
+		I extends IntegerType<I> & NativeType<I>> extends SparseArray<D, I> {
 
-    public SparseCSCImg(final long numCols, final long numRows, final Img<D> data, final Img<I> indices, final Img<I> indptr) {
+    public CscArray(final long numCols, final long numRows, final Img<D> data, final Img<I> indices, final Img<I> indptr) {
         super(numCols, numRows, data, indices, indptr);
     }
 
@@ -28,16 +28,16 @@ public class SparseCSCImg<
 	}
 
 	@Override
-	public SparseCSCImg<D,I> copy() {
+	public CscArray<D,I> copy() {
 		Img<D> dataCopy = data.copy();
 		Img<I> indicesCopy = indices.copy();
 		Img<I> indptrCopy = indptr.copy();
-		return new SparseCSCImg<>(dimension(0), dimension(1), dataCopy, indicesCopy, indptrCopy);
+		return new CscArray<>(dimension(0), dimension(1), dataCopy, indicesCopy, indptrCopy);
 	}
 
 	@Override
 	public ImgFactory<D> factory() {
-		return new SparseImgFactory<>(data.getAt(0), indices.getAt(0), 1);
+		return new SparseArrayFactory<>(data.getAt(0), indices.getAt(0), 1);
 	}
 
 	@Override
@@ -61,10 +61,10 @@ public class SparseCSCImg<
 		@Override
 		public boolean equals(final Object obj) {
 
-			if (!(obj instanceof SparseCSCImg.ColumnMajorIterationOrder2D))
+			if (!(obj instanceof CscArray.ColumnMajorIterationOrder2D))
 				return false;
 
-			return SparseImg.haveSameIterationSpace(interval, ((ColumnMajorIterationOrder2D) obj).interval);
+			return SparseArray.haveSameIterationSpace(interval, ((ColumnMajorIterationOrder2D) obj).interval);
 		}
 	}
 }

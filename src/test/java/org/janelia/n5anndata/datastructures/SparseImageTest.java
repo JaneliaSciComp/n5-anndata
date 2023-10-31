@@ -1,4 +1,4 @@
-package net.imglib2.img.sparse;
+package org.janelia.n5anndata.datastructures;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,16 +11,22 @@ import net.imglib2.type.Type;
 import net.imglib2.type.numeric.integer.LongType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.Views;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class SparseImageTest {
 
-	protected static Map<String, net.imglib2.img.sparse.SparseImg<DoubleType, LongType>> sparseImgs;
+	protected static Map<String, SparseImg<DoubleType, LongType>> sparseImgs;
 
 	@Test
 	public void CsrSetupIsCorrect() {
-		net.imglib2.img.sparse.SparseCSRImg<DoubleType, LongType> csr = setupCsr();
+		SparseCSRImg<DoubleType, LongType> csr = setupCsr();
 		assertEquals(2, csr.numDimensions());
 		assertArrayEquals(new long[]{0, 0}, csr.minAsLongArray());
 		assertArrayEquals(new long[]{9, 8}, csr.maxAsLongArray());
@@ -28,9 +34,9 @@ public class SparseImageTest {
 
 	@Test
 	public void iterationOrderEqualityTestIsCorrect() {
-		net.imglib2.img.sparse.SparseCSRImg<DoubleType, LongType> csr = setupCsr();
-		net.imglib2.img.sparse.SparseCSRImg<DoubleType, LongType> csr2 = csr.copy();
-		net.imglib2.img.sparse.SparseCSCImg<DoubleType, LongType> csc = setupCsc();
+		SparseCSRImg<DoubleType, LongType> csr = setupCsr();
+		SparseCSRImg<DoubleType, LongType> csr2 = csr.copy();
+		SparseCSCImg<DoubleType, LongType> csc = setupCsc();
 
 		assertEquals(csr.iterationOrder(), csr.iterationOrder());
 		assertEquals(csr.iterationOrder(), csr2.iterationOrder());
@@ -44,64 +50,64 @@ public class SparseImageTest {
 
 		for (int i = 0; i < x.length; i++) {
 			RandomAccess<DoubleType> ra = setupCsr().randomAccess();
-			assertEquals("Mismatch for x=" + x[i] + ", y=" + y[i], 1.0, ra.setPositionAndGet(x[i],y[i]).getRealDouble(), 1e-6);
+			assertEquals(1.0, ra.setPositionAndGet(x[i],y[i]).getRealDouble(), 1e-6, "Mismatch for x=" + x[i] + ", y=" + y[i]);
 		}
 	}
 
 	@Test
 	public void sparseHasCorrectNumberOfNonzeros() {
-		for (Map.Entry<String, net.imglib2.img.sparse.SparseImg<DoubleType, LongType>> entry : sparseImgs.entrySet()) {
-			assertEquals("Mismatch for " + entry.getKey(), 5, net.imglib2.img.sparse.SparseImg.getNumberOfNonzeros(entry.getValue()));
+		for (Map.Entry<String, SparseImg<DoubleType, LongType>> entry : sparseImgs.entrySet()) {
+			assertEquals(5, SparseImg.getNumberOfNonzeros(entry.getValue()), "Mismatch for " + entry.getKey());
 		}
 	}
 
 	@Test
 	public void conversionToSparseIsCorrect() {
-		for (net.imglib2.img.sparse.SparseImg<DoubleType, LongType> sparse : sparseImgs.values()) {
-			assertEquals(5, net.imglib2.img.sparse.SparseImg.getNumberOfNonzeros(sparse));
-			net.imglib2.img.sparse.SparseImg<DoubleType, LongType> newCsr = net.imglib2.img.sparse.SparseImg.convertToSparse(sparse, 0);
-			assertTrue(newCsr instanceof net.imglib2.img.sparse.SparseCSRImg);
+		for (SparseImg<DoubleType, LongType> sparse : sparseImgs.values()) {
+			assertEquals(5, SparseImg.getNumberOfNonzeros(sparse));
+			SparseImg<DoubleType, LongType> newCsr = SparseImg.convertToSparse(sparse, 0);
+			assertTrue(newCsr instanceof SparseCSRImg);
 			assert2DRaiEquals(sparse, newCsr);
-			net.imglib2.img.sparse.SparseImg<DoubleType, LongType> newCsc = net.imglib2.img.sparse.SparseImg.convertToSparse(sparse, 1);
-			assertTrue(newCsc instanceof net.imglib2.img.sparse.SparseCSCImg);
+			SparseImg<DoubleType, LongType> newCsc = SparseImg.convertToSparse(sparse, 1);
+			assertTrue(newCsc instanceof SparseCSCImg);
 			assert2DRaiEquals(sparse, newCsc);
 		}
 	}
 
 	@Test
 	public void CscIsCsrTransposed() {
-		net.imglib2.img.sparse.SparseCSRImg<DoubleType, LongType> csr = setupCsr();
-		net.imglib2.img.sparse.SparseCSCImg<DoubleType, LongType> csc = setupCsc();
+		SparseCSRImg<DoubleType, LongType> csr = setupCsr();
+		SparseCSCImg<DoubleType, LongType> csc = setupCsc();
 		assert2DRaiEquals(csr, Views.permute(csc, 0, 1));
 	}
 
-	protected net.imglib2.img.sparse.SparseCSRImg<DoubleType, LongType> setupCsr() {
-		return (net.imglib2.img.sparse.SparseCSRImg<DoubleType, LongType>) sparseImgs.get("CSR");
+	protected SparseCSRImg<DoubleType, LongType> setupCsr() {
+		return (SparseCSRImg<DoubleType, LongType>) sparseImgs.get("CSR");
 	}
 
-	protected net.imglib2.img.sparse.SparseCSCImg<DoubleType, LongType> setupCsc() {
-		return (net.imglib2.img.sparse.SparseCSCImg<DoubleType, LongType>) sparseImgs.get("CSC");
+	protected SparseCSCImg<DoubleType, LongType> setupCsc() {
+		return (SparseCSCImg<DoubleType, LongType>) sparseImgs.get("CSC");
 	}
 
-	@BeforeClass
+	@BeforeAll
 	public static void setupSparseImages() {
 		Img<DoubleType> data = ArrayImgs.doubles(new double[]{1.0, 1.0, 1.0, 1.0, 1.0}, 5);
 		Img<LongType> indices = ArrayImgs.longs(new long[]{2L, 5L, 0L, 6L, 9L}, 5);
 		Img<LongType> indptr = ArrayImgs.longs(new long[]{0L, 1L, 2L, 3L, 3L, 3L, 3L, 3L, 3L, 5L}, 10);
 
 		sparseImgs = new HashMap<>();
-		sparseImgs.put("CSR", new net.imglib2.img.sparse.SparseCSRImg<>(10, 9, data, indices, indptr));
-		sparseImgs.put("CSC", new net.imglib2.img.sparse.SparseCSCImg<>(9, 10, data, indices, indptr));
+		sparseImgs.put("CSR", new SparseCSRImg<>(10, 9, data, indices, indptr));
+		sparseImgs.put("CSC", new SparseCSCImg<>(9, 10, data, indices, indptr));
 	}
 
 	protected static <T extends Type<T>> void assert2DRaiEquals(RandomAccessibleInterval<T> expected, RandomAccessibleInterval<T> actual) {
-		assertEquals("Number of columns not the same.", expected.dimension(0), actual.dimension(0));
-		assertEquals("Number of rows not the same.", expected.dimension(1), actual.dimension(1));
+		assertEquals(expected.dimension(0), actual.dimension(0), "Number of columns not the same.");
+		assertEquals(expected.dimension(1), actual.dimension(1), "Number of rows not the same.");
 
 		RandomAccess<T> raExpected = expected.randomAccess();
 		RandomAccess<T> raActual = actual.randomAccess();
 		for (int i = 0; i < expected.dimension(0); ++i)
 			for (int j = 0; j < expected.dimension(1); ++j)
-				assertEquals("Rai's differ on entry (" + i + "," + j +")", raExpected.setPositionAndGet(i, j), raActual.setPositionAndGet(i, j));
+				assertEquals(raExpected.setPositionAndGet(i, j), raActual.setPositionAndGet(i, j), "Rai's differ on entry (" + i + "," + j +")");
 	}
 }

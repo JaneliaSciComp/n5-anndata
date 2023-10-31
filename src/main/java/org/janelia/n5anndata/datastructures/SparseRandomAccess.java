@@ -1,4 +1,4 @@
-package net.imglib2.img.sparse;
+package org.janelia.n5anndata.datastructures;
 
 import net.imglib2.AbstractLocalizable;
 import net.imglib2.Localizable;

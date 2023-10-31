@@ -1,4 +1,4 @@
-package net.imglib2.img.sparse;
+package org.janelia.n5anndata.datastructures;
 
 import net.imglib2.Dimensions;
 import net.imglib2.exception.IncompatibleTypeException;

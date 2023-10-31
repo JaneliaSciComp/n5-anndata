@@ -1,4 +1,4 @@
-package net.imglib2.img.sparse;
+package org.janelia.n5anndata.datastructures;
 
 import net.imglib2.Cursor;
 import net.imglib2.Interval;
@@ -11,7 +11,7 @@ import net.imglib2.type.numeric.NumericType;
 
 public class SparseCSCImg<
 		D extends NumericType<D> & NativeType<D>,
-		I extends IntegerType<I> & NativeType<I>> extends SparseImg<D,I> {
+		I extends IntegerType<I> & NativeType<I>> extends SparseImg<D, I> {
 
     public SparseCSCImg(final long numCols, final long numRows, final Img<D> data, final Img<I> indices, final Img<I> indptr) {
         super(numCols, numRows, data, indices, indptr);

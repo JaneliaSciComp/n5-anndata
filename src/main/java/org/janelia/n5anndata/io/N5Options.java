@@ -10,7 +10,7 @@ public class N5Options {
 	Compression compression;
 	ExecutorService exec;
 
-	public N5Options(int[] blockSize, Compression compression, ExecutorService exec) {
+	public N5Options(final int[] blockSize, final Compression compression, final ExecutorService exec) {
 		this.blockSize = blockSize;
 		this.compression = compression;
 		this.exec = exec;

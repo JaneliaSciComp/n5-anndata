@@ -19,7 +19,7 @@ public class CscArray<
 
 	@Override
 	public RandomAccess<D> randomAccess() {
-		return new SparseRandomAccess<D, I>(this, 1);
+		return new SparseRandomAccess<>(this, 1);
 	}
 
 	@Override
@@ -29,9 +29,9 @@ public class CscArray<
 
 	@Override
 	public CscArray<D,I> copy() {
-		Img<D> dataCopy = data.copy();
-		Img<I> indicesCopy = indices.copy();
-		Img<I> indptrCopy = indptr.copy();
+		final Img<D> dataCopy = data.copy();
+		final Img<I> indicesCopy = indices.copy();
+		final Img<I> indptrCopy = indptr.copy();
 		return new CscArray<>(dimension(0), dimension(1), dataCopy, indicesCopy, indptrCopy);
 	}
 

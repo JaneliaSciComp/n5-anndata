@@ -22,8 +22,13 @@ abstract public class SparseArray<
     protected final Img<I> indices;
     protected final Img<I> indptr;
 
-    public SparseArray(long numCols, long numRows, Img<D> data, Img<I> indices, Img<I> indptr) {
-
+    public SparseArray(
+            final long numCols,
+            final long numRows,
+            final Img<D> data,
+            final Img<I> indices,
+            final Img<I> indptr
+    ) {
         this.data = data;
         this.indices = indices;
         this.indptr = indptr;
@@ -39,30 +44,31 @@ abstract public class SparseArray<
             throw new IllegalArgumentException("Indptr array does not fit number of slices.");
     }
 
-    public static <T extends NumericType<T> & NativeType<T>> SparseArray<T, LongType> convertToSparse(Img<T> img) {
+    public static <T extends NumericType<T> & NativeType<T>> SparseArray<T, LongType>
+    convertToSparse(final Img<T> img) {
         return convertToSparse(img, 0); // CSR per default
     }
 
     public static <T extends NumericType<T> & NativeType<T>> SparseArray<T, LongType>
-    convertToSparse(Img<T> img, int leadingDimension) {
+    convertToSparse(final Img<T> img, final int leadingDimension) {
         if (leadingDimension != 0 && leadingDimension != 1)
             throw new IllegalArgumentException("Leading dimension in sparse array must be 0 or 1.");
 
-        T zeroValue = img.getAt(0, 0).copy();
+        final T zeroValue = img.getAt(0, 0).copy();
         zeroValue.setZero();
 
-        int nnz = getNumberOfNonzeros(img);
-        int ptrDimension = 1 - leadingDimension;
-        Img<T> data = new ArrayImgFactory<>(zeroValue).create(nnz);
-        Img<LongType> indices = new ArrayImgFactory<>(new LongType()).create(nnz);
-        Img<LongType> indptr = new ArrayImgFactory<>(new LongType()).create(img.dimension(ptrDimension) + 1);
+        final int nnz = getNumberOfNonzeros(img);
+        final int ptrDimension = 1 - leadingDimension;
+        final Img<T> data = new ArrayImgFactory<>(zeroValue).create(nnz);
+        final Img<LongType> indices = new ArrayImgFactory<>(new LongType()).create(nnz);
+        final Img<LongType> indptr = new ArrayImgFactory<>(new LongType()).create(img.dimension(ptrDimension) + 1);
 
         long count = 0;
         T actualValue;
-        RandomAccess<T> ra = img.randomAccess();
-        RandomAccess<T> dataAccess = data.randomAccess();
-        RandomAccess<LongType> indicesAccess = indices.randomAccess();
-        RandomAccess<LongType> indptrAccess = indptr.randomAccess();
+        final RandomAccess<T> ra = img.randomAccess();
+        final RandomAccess<T> dataAccess = data.randomAccess();
+        final RandomAccess<LongType> indicesAccess = indices.randomAccess();
+        final RandomAccess<LongType> indptrAccess = indptr.randomAccess();
         indptrAccess.setPosition(0,0);
         indptrAccess.get().setLong(0L);
 
@@ -87,24 +93,24 @@ abstract public class SparseArray<
             : new CscArray<>(img.dimension(0), img.dimension(1), data, indices, indptr);
     }
 
-    public static <T extends NumericType<T>> int getNumberOfNonzeros(Img<T> img) {
-        T zeroValue = img.getAt(0, 0).copy();
+    public static <T extends NumericType<T>> int getNumberOfNonzeros(final Img<T> img) {
+        final T zeroValue = img.getAt(0, 0).copy();
         zeroValue.setZero();
 
         int nnz = 0;
-        for (T pixel : img)
+        for (final T pixel : img)
             if (!pixel.valueEquals(zeroValue))
                 ++nnz;
         return nnz;
     }
 
     @Override
-    public long min(int d) {
+    public long min(final int d) {
         return 0L;
     }
 
     @Override
-    public long max(int d) {
+    public long max(final int d) {
         return max[d];
     }
 
@@ -114,7 +120,7 @@ abstract public class SparseArray<
     }
 
     @Override
-    public RandomAccess<D> randomAccess(Interval interval) {
+    public RandomAccess<D> randomAccess(final Interval interval) {
         return randomAccess();
     }
 
@@ -147,16 +153,16 @@ abstract public class SparseArray<
      * @param b Other interval
      * @return true if both intervals have compatible non-singleton dimensions, false otherwise
      */
-    protected static boolean haveSameIterationSpace(Interval a, Interval b) {
-        List<Integer> nonSingletonDimA = nonSingletonDimensions(a);
-        List<Integer> nonSingletonDimB = nonSingletonDimensions(b);
+    protected static boolean haveSameIterationSpace(final Interval a, final Interval b) {
+        final List<Integer> nonSingletonDimA = nonSingletonDimensions(a);
+        final List<Integer> nonSingletonDimB = nonSingletonDimensions(b);
 
         if (nonSingletonDimA.size() != nonSingletonDimB.size())
             return false;
 
         for (int i = 0; i < nonSingletonDimA.size(); i++) {
-            Integer dimA = nonSingletonDimA.get(i);
-            Integer dimB = nonSingletonDimB.get(i);
+            final Integer dimA = nonSingletonDimA.get(i);
+            final Integer dimB = nonSingletonDimB.get(i);
             if (a.min(dimA) != b.min(dimB) || a.max(dimA) != b.max(dimB))
                 return false;
         }
@@ -164,8 +170,8 @@ abstract public class SparseArray<
         return true;
     }
 
-    protected static List<Integer> nonSingletonDimensions(Interval interval) {
-        List<Integer> nonSingletonDim = new ArrayList<>();
+    protected static List<Integer> nonSingletonDimensions(final Interval interval) {
+        final List<Integer> nonSingletonDim = new ArrayList<>();
         for (int i = 0; i < interval.numDimensions(); i++)
             if (interval.dimension(i) > 1)
                 nonSingletonDim.add(i);

@@ -23,22 +23,22 @@ public class SparseArrayFactory<
 	protected final I indexType;
 
 
-	protected SparseArrayFactory(D type, I indexType, int leadingDimension) {
+	protected SparseArrayFactory(final D type, final I indexType, final int leadingDimension) {
 		super(type);
 		this.leadingDimension = leadingDimension;
 		this.indexType = indexType;
 	}
 
 	@Override
-	public SparseArray<D, I> create(long... dimensions) {
+	public SparseArray<D, I> create(final long... dimensions) {
 		if (dimensions.length != 2)
 			throw new IllegalArgumentException("Only 2D images are supported");
 
 		Dimensions.verify(dimensions);
-		ArrayImg<D, ?> data = new ArrayImgFactory<>(type()).create(1);
-		ArrayImg<I, ?> indices = new ArrayImgFactory<>(indexType).create(1);
-		int secondaryDimension = 1 - leadingDimension;
-		ArrayImg<I, ?> indptr = new ArrayImgFactory<>(indexType).create(dimensions[secondaryDimension] + 1);
+		final ArrayImg<D, ?> data = new ArrayImgFactory<>(type()).create(1);
+		final ArrayImg<I, ?> indices = new ArrayImgFactory<>(indexType).create(1);
+		final int secondaryDimension = 1 - leadingDimension;
+		final ArrayImg<I, ?> indptr = new ArrayImgFactory<>(indexType).create(dimensions[secondaryDimension] + 1);
 
 		return (leadingDimension == 0) ? new CsrArray<>(dimensions[0], dimensions[1], data, indices, indptr)
 			: new CscArray<>(dimensions[0], dimensions[1], data, indices, indptr);
@@ -46,7 +46,7 @@ public class SparseArrayFactory<
 
 	@Override
 	@SuppressWarnings({"unchecked", "rawtypes"})
-	public <S> ImgFactory<S> imgFactory(S type) throws IncompatibleTypeException {
+	public <S> ImgFactory<S> imgFactory(final S type) throws IncompatibleTypeException {
 		if (type instanceof NumericType && type instanceof NativeType)
 			return new SparseArrayFactory<>((NumericType & NativeType) type, indexType, leadingDimension);
 		else
@@ -54,7 +54,7 @@ public class SparseArrayFactory<
 	}
 
 	@Override
-	public Img<D> create(long[] dim, D type) {
+	public Img<D> create(final long[] dim, final D type) {
 		return create(dim);
 	}
 }

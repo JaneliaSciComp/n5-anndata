@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutionException;
 class AnnDataDetails {
 
     public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
-    Img<T> readArray(N5Reader reader, String path) throws IOException {
+    Img<T> readArray(final N5Reader reader, final String path) {
         final AnnDataFieldType type = getFieldType(reader, path);
         switch (type) {
             case MISSING:
@@ -46,7 +46,7 @@ class AnnDataDetails {
         }
     }
 
-    public static AnnDataFieldType getFieldType(N5Reader reader, String path) throws IOException {
+    public static AnnDataFieldType getFieldType(final N5Reader reader, final String path) {
         final String encoding = reader.getAttribute(path, "encoding-type", String.class);
         final String version = reader.getAttribute(path, "encoding-version", String.class);
         return AnnDataFieldType.fromString(encoding, version);
@@ -54,9 +54,9 @@ class AnnDataDetails {
 
     protected static <D extends NativeType<D> & RealType<D>, I extends NativeType<I> & IntegerType<I>>
     SparseArray<D, I> openSparseArray(
-            N5Reader reader,
-            String path,
-            SparseArrayConstructor<D, I> constructor) throws IOException {
+            final N5Reader reader,
+            final String path,
+            final SparseArrayConstructor<D, I> constructor) {
 
         final Img<D> sparseData = N5Utils.open(reader, path + "/data");
         final Img<I> indices = N5Utils.open(reader, path + "/indices");
@@ -66,7 +66,7 @@ class AnnDataDetails {
         return constructor.apply(shape[1], shape[0], sparseData, indices, indptr);
     }
 
-    public static List<String> readStringAnnotation(N5Reader reader, String path) throws IOException {
+    public static List<String> readStringAnnotation(final N5Reader reader, final String path) {
         final AnnDataFieldType type = getFieldType(reader, path);
         switch (type) {
             case STRING_ARRAY:
@@ -78,45 +78,49 @@ class AnnDataDetails {
         }
     }
 
-    protected static List<String> readStringList(N5Reader reader, String path) {
+    protected static List<String> readStringList(final N5Reader reader, final String path) {
         final String[] array = readPrimitiveStringArray((N5HDF5Reader) reader, path);
         return Arrays.asList(array);
     }
 
-    protected static String[] readPrimitiveStringArray(N5HDF5Reader reader, String path) {
+    protected static String[] readPrimitiveStringArray(final N5HDF5Reader reader, final String path) {
         final IHDF5Reader hdf5Reader = HDF5Factory.openForReading(reader.getFilename());
         return hdf5Reader.readStringArray(path);
     }
 
-    public static <T extends NativeType<T> & RealType<T>> RandomAccessibleInterval<T> readFromDataFrame(N5Reader reader, String dataFrame, String label) throws IOException {
-        List<String> existingData = getExistingDataFrameDatasets(reader, dataFrame);
+    public static <T extends NativeType<T> & RealType<T>> RandomAccessibleInterval<T>
+    readFromDataFrame(final N5Reader reader, final String dataFrame, final String label) throws IOException {
+        final List<String> existingData = getExistingDataFrameDatasets(reader, dataFrame);
         if (!existingData.contains(label))
             throw new IOException("Dataframe '" + dataFrame + "' does not contain '" + label + "'.");
 
         // TODO: this returns null for non-readble datatypes (e.g. string); is there a better way to treat string annotations?
-        DatasetAttributes attributes = reader.getDatasetAttributes(dataFrame + "/" + label);
-        if (attributes == null || attributes.getDataType() == null)
+        final DatasetAttributes attributes = reader.getDatasetAttributes(dataFrame + "/" + label);
+        if (attributes == null || attributes.getDataType() == null) {
             return null;
+        }
 
         return N5Utils.open(reader, dataFrame + "/" + label);
     }
 
-    public static List<String> getExistingDataFrameDatasets(N5Reader reader, String dataFrame) throws IOException {
-        if (!reader.exists(dataFrame))
+    public static List<String> getExistingDataFrameDatasets(final N5Reader reader, final String dataFrame) {
+        if (!reader.exists(dataFrame)) {
             return new ArrayList<>();
+        }
 
         String[] rawArray = reader.getAttribute(dataFrame, "column-order", String[].class);
         rawArray = (rawArray == null) ? reader.list(dataFrame) : rawArray;
 
-        if (rawArray == null || rawArray.length == 0)
+        if (rawArray == null || rawArray.length == 0) {
             return new ArrayList<>();
+        }
 
-        List<String> datasets = new ArrayList<>(Arrays.asList(rawArray));
+        final List<String> datasets = new ArrayList<>(Arrays.asList(rawArray));
         datasets.remove("_index");
         return datasets;
     }
 
-    protected static List<String> readCategoricalList(N5Reader reader, String path) throws IOException {
+    protected static List<String> readCategoricalList(final N5Reader reader, final String path) {
         final String[] categoryNames = readPrimitiveStringArray((N5HDF5Reader) reader, path + "/categories");
         final Img<? extends IntegerType<?>> category = N5Utils.open(reader, path + "/codes");
         final RandomAccess<? extends IntegerType<?>> ra = category.randomAccess();
@@ -131,67 +135,69 @@ class AnnDataDetails {
         return Arrays.asList(names);
     }
 
-    public static boolean isValidAnnData(N5Reader n5) {
+    public static boolean isValidAnnData(final N5Reader n5) {
         try {
             return getFieldType(n5, "/").toString().equals(AnnDataFieldType.ANNDATA.toString());
-        }
-        catch (Exception e) {
+        } catch (final Exception e) {
             return false;
         }
     }
 
-    public static void writeEncoding(N5Writer writer, String path, AnnDataFieldType type) throws IOException {
+    public static void writeEncoding(final N5Writer writer, final String path, final AnnDataFieldType type) {
         writer.setAttribute(path, "encoding-type", type.encoding);
         writer.setAttribute(path, "encoding-version", type.version);
     }
 
     public static <T extends NativeType<T> & RealType<T>> void writeArray(
-            N5Writer writer,
-            String path,
-            Img<T> data,
-            N5Options options) throws IOException {
+            final N5Writer writer,
+            final String path,
+            final Img<T> data,
+            final N5Options options) throws IOException {
 
         AnnDataFieldType type = AnnDataFieldType.DENSE_ARRAY;
-        if (data instanceof CsrArray)
+        if (data instanceof CsrArray) {
             type = AnnDataFieldType.CSR_MATRIX;
-        if (data instanceof CscArray)
+        }
+        if (data instanceof CscArray) {
             type = AnnDataFieldType.CSC_MATRIX;
+        }
+
         writeArray(writer, path, data, options, type);
     }
 
     public static <T extends NativeType<T> & RealType<T>> void writeArray(
-            N5Writer writer,
-            String path,
-            Img<T> data,
-            N5Options options,
-            AnnDataFieldType type) throws IOException {
+            final N5Writer writer,
+            final String path,
+            final Img<T> data,
+            final N5Options options,
+            final AnnDataFieldType type) throws IOException {
 
         try {
-            if (type == AnnDataFieldType.DENSE_ARRAY)
+            if (type == AnnDataFieldType.DENSE_ARRAY) {
                 N5Utils.save(data, writer, path, options.blockSize, options.compression, options.exec);
-            else if (type == AnnDataFieldType.CSR_MATRIX || type == AnnDataFieldType.CSC_MATRIX)
+            } else if (type == AnnDataFieldType.CSR_MATRIX || type == AnnDataFieldType.CSC_MATRIX) {
                 writeSparseArray(writer, path, data, options, type);
-            else
+            } else {
                 throw new UnsupportedOperationException("Writing array data for " + type.toString() + " not supported.");
+            }
             writer.setAttribute(path, "shape", new long[]{data.dimension(1), data.dimension(0)});
             writeEncoding(writer, path, type);
-        }
-        catch (ExecutionException | InterruptedException e) {
+        } catch (final ExecutionException | InterruptedException e) {
             throw new IOException("Could not load dataset at '" + path + "'.", e);
         }
     }
 
     public static <T extends NativeType<T> & RealType<T>> void writeSparseArray(
-            N5Writer writer,
-            String path,
-            Img<T> data,
-            N5Options options,
-            AnnDataFieldType type) throws IOException, ExecutionException, InterruptedException {
+            final N5Writer writer,
+            final String path,
+            final Img<T> data,
+            final N5Options options,
+            final AnnDataFieldType type) throws ExecutionException, InterruptedException {
 
         if (type != AnnDataFieldType.CSR_MATRIX && type != AnnDataFieldType.CSC_MATRIX)
             throw new IllegalArgumentException("Sparse array type must be CSR or CSC.");
 
-        SparseArray<T, ?> sparse;
+        final SparseArray<T, ?> sparse;
         final boolean typeFitsData = (type == AnnDataFieldType.CSR_MATRIX && data instanceof CsrArray)
                 || (type == AnnDataFieldType.CSC_MATRIX && data instanceof CscArray);
         if (typeFitsData) {
@@ -203,13 +209,13 @@ class AnnDataDetails {
         }
 
         writer.createGroup(path);
-        int[] blockSize = (options.blockSize.length == 1) ? options.blockSize : new int[]{options.blockSize[0]*options.blockSize[1]};
+        final int[] blockSize = (options.blockSize.length == 1) ? options.blockSize : new int[]{options.blockSize[0]*options.blockSize[1]};
         N5Utils.save(sparse.getDataArray(), writer, path + "/data", blockSize, options.compression, options.exec);
         N5Utils.save(sparse.getIndicesArray(), writer, path + "/indices", blockSize, options.compression, options.exec);
         N5Utils.save(sparse.getIndexPointerArray(), writer, path + "/indptr", blockSize, options.compression, options.exec);
     }
 
-    public static void createDataFrame(N5Writer writer, String path, List<String> index) throws IOException {
+    public static void createDataFrame(final N5Writer writer, final String path, final List<String> index) {
         writer.createGroup(path);
         writeEncoding(writer, path, AnnDataFieldType.DATA_FRAME);
         writer.setAttribute(path, "_index", "_index");
@@ -221,13 +227,13 @@ class AnnDataDetails {
     }
 
     public static <T extends NativeType<T> & RealType<T>> void addToDataFrame(
-            N5Writer writer,
-            String dataFrame,
-            String label,
-            RandomAccessibleInterval<T> data,
-            N5Options options) throws IOException {
+            final N5Writer writer,
+            final String dataFrame,
+            final String label,
+            final RandomAccessibleInterval<T> data,
+            final N5Options options) throws IOException {
 
-        List<String> existingData = getExistingDataFrameDatasets(writer, dataFrame);
+        final List<String> existingData = getExistingDataFrameDatasets(writer, dataFrame);
         if (existingData.contains(label))
             throw new IOException("Dataframe '" + dataFrame + "' already contains '" + label + "'.");
 
@@ -235,17 +241,17 @@ class AnnDataDetails {
             N5Utils.save(data, writer, dataFrame + "/" + label, options.blockSize, options.compression, options.exec);
             existingData.add(label);
             writer.setAttribute(dataFrame, "column-order", existingData.toArray());
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (final InterruptedException | ExecutionException e) {
             throw new IOException("Could not write dataset '" + dataFrame + "/" + label + "'.", e);
         }
     }
 
-    protected static void writePrimitiveStringArray(N5HDF5Writer writer, String path, String[] array) {
+    protected static void writePrimitiveStringArray(final N5HDF5Writer writer, final String path, final String[] array) {
         final IHDF5StringWriter stringWriter = HDF5Factory.open(writer.getFilename()).string();
         stringWriter.writeArrayVL(path, array);
     }
 
-    protected static void createMapping(N5Writer writer, String path) throws IOException {
+    protected static void createMapping(final N5Writer writer, final String path) {
         writer.createGroup(path);
         writeEncoding(writer, path, AnnDataFieldType.MAPPING);
     }
@@ -269,7 +275,7 @@ class AnnDataDetails {
         private final String encoding;
         private final String version;
 
-        AnnDataFieldType(String encoding, String version) {
+        AnnDataFieldType(final String encoding, final String version) {
             this.encoding = encoding;
             this.version = version;
         }
@@ -278,11 +284,11 @@ class AnnDataDetails {
             return "encoding: " + encoding + ", version: " + version;
         }
 
-        public static AnnDataFieldType fromString(String encoding, String version) {
+        public static AnnDataFieldType fromString(final String encoding, final String version) {
             if (encoding == null || version == null)
                 return MISSING;
 
-            for (AnnDataFieldType type : values())
+            for (final AnnDataFieldType type : values())
                 if (type.encoding.equals(encoding) && type.version.equals(version))
                     return type;
 

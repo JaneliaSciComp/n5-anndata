@@ -15,13 +15,13 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 	private final int secondaryDim;
 	private final T fillValue;
 
-	private SparseArray<T,?> img = null;
-	private Cursor<T> dataCursor;
-	private Cursor<? extends IntegerType<?>> indicesCursor;
-	private RandomAccess<? extends IntegerType<?>> indptrAccess;
+	private final SparseArray<T,?> img;
+	private final Cursor<T> dataCursor;
+	private final Cursor<? extends IntegerType<?>> indicesCursor;
+	private final RandomAccess<? extends IntegerType<?>> indptrAccess;
 
 
-	public SparseLocalizingCursor(int n) {
+	public SparseLocalizingCursor(final int n) {
 		super(n);
 		if (n != 2)
 			throw new IllegalArgumentException("Only 2D images are supported");
@@ -36,7 +36,7 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 		secondaryDim = 0;
 	}
 
-	public SparseLocalizingCursor(SparseArray<T,?> img, int leadingDimension, T fillValue) {
+	public SparseLocalizingCursor(final SparseArray<T,?> img, final int leadingDimension, final T fillValue) {
 		super(img.numDimensions());
 		if (n != 2)
 			throw new IllegalArgumentException("Only 2D images are supported");
@@ -93,7 +93,7 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 			dataCursor.fwd();
 			indicesCursor.fwd();
 		}
-		long currentIndexPosition = indicesCursor.getLongPosition(0);
+		final long currentIndexPosition = indicesCursor.getLongPosition(0);
 		indptrAccess.fwd(0);
 		while (indptrAccess.get().getIntegerLong() <= currentIndexPosition)
 			indptrAccess.fwd(0);

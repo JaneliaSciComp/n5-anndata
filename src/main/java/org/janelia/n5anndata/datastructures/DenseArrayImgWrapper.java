@@ -16,7 +16,7 @@ import net.imglib2.type.numeric.NumericType;
 public class DenseArrayImgWrapper<D extends NumericType<D> & NativeType<D>> implements DenseArray<D> {
 	private final Img<D> img;
 
-	public DenseArrayImgWrapper(Img<D> img) {
+	public DenseArrayImgWrapper(final Img<D> img) {
 		this.img = img;
 	}
 
@@ -52,12 +52,12 @@ public class DenseArrayImgWrapper<D extends NumericType<D> & NativeType<D>> impl
 	}
 
 	@Override
-	public long min(int i) {
+	public long min(final int i) {
 		return img.min(i);
 	}
 
 	@Override
-	public long max(int i) {
+	public long max(final int i) {
 		return img.max(i);
 	}
 
@@ -67,7 +67,7 @@ public class DenseArrayImgWrapper<D extends NumericType<D> & NativeType<D>> impl
 	}
 
 	@Override
-	public RandomAccess<D> randomAccess(Interval interval) {
+	public RandomAccess<D> randomAccess(final Interval interval) {
 		return img.randomAccess(interval);
 	}
 

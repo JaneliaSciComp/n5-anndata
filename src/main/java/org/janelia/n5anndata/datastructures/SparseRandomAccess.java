@@ -19,7 +19,7 @@ public class SparseRandomAccess<
     protected final int secondaryDim;
     protected final D fillValue;
 
-    public SparseRandomAccess(SparseArray<D, I> rai, int leadingDim) {
+    public SparseRandomAccess(final SparseArray<D, I> rai, final int leadingDim) {
         super(rai.numDimensions());
         this.rai = rai;
         this.dataAccess = rai.data.randomAccess();
@@ -32,7 +32,7 @@ public class SparseRandomAccess<
         this.fillValue.setZero();
     }
 
-    public SparseRandomAccess(SparseRandomAccess<D, I> ra) {
+    public SparseRandomAccess(final SparseRandomAccess<D, I> ra) {
         super(ra.rai.numDimensions());
 
         this.rai = ra.rai;
@@ -49,74 +49,74 @@ public class SparseRandomAccess<
     }
 
     @Override
-    public void fwd(int d) {
+    public void fwd(final int d) {
         ++position[d];
     }
 
     @Override
-    public void bck(int d) {
+    public void bck(final int d) {
         --position[d];
     }
 
     @Override
-    public void move(int distance, int d) {
+    public void move(final int distance, final int d) {
         position[d] += distance;
     }
 
     @Override
-    public void move(long distance, int d) {
+    public void move(final long distance, final int d) {
         position[d] += distance;
     }
 
     @Override
-    public void move(Localizable localizable) {
+    public void move(final Localizable localizable) {
         for (int d = 0; d < n; ++d) {
             position[d] += localizable.getLongPosition(d);
         }
     }
 
     @Override
-    public void move(int[] distance) {
+    public void move(final int[] distance) {
         for (int d = 0; d < n; ++d) {
             position[d] += distance[d];
         }
     }
 
     @Override
-    public void move(long[] distance) {
+    public void move(final long[] distance) {
         for (int d = 0; d < n; ++d) {
             position[d] += distance[d];
         }
     }
 
     @Override
-    public void setPosition(Localizable localizable) {
+    public void setPosition(final Localizable localizable) {
         for (int d = 0; d < n; ++d) {
             position[d]  = localizable.getLongPosition(d);
         }
     }
 
     @Override
-    public void setPosition(int[] position) {
+    public void setPosition(final int[] position) {
         for (int d = 0; d < n; ++d) {
             this.position[d] = position[d];
         }
     }
 
     @Override
-    public void setPosition(long[] position) {
+    public void setPosition(final long[] position) {
         for (int d = 0; d < n; ++d) {
             this.position[d] = position[d];
         }
     }
 
     @Override
-    public void setPosition(int position, int d) {
+    public void setPosition(final int position, final int d) {
         this.position[d] = position;
     }
 
     @Override
-    public void setPosition(long position, int d) {
+    public void setPosition(final long position, final int d) {
         this.position[d] = position;
     }
 

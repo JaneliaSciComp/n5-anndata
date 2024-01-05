@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutionException;
 class AnnDataDetails {
 
     public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
-    Img<T> readArray(final N5Reader reader, final String path) {
+    Img<T> readNumericalArray(final N5Reader reader, final String path) {
         final AnnDataFieldType type = getFieldType(reader, path);
         switch (type) {
             case MISSING:
@@ -42,7 +42,7 @@ class AnnDataDetails {
             case CSC_MATRIX:
                 return openSparseArray(reader, path, CscArray<T,I>::new); // column
             default:
-                throw new UnsupportedOperationException("Reading data for " + type + " not supported.");
+                throw new UnsupportedOperationException("Reading numerical array data from " + type + " not supported.");
         }
     }
 
@@ -89,18 +89,18 @@ class AnnDataDetails {
     }
 
     public static <T extends NativeType<T> & RealType<T>> RandomAccessibleInterval<T>
-    readFromDataFrame(final N5Reader reader, final String dataFrame, final String label) throws IOException {
+    readColumnFromDataFrame(final N5Reader reader, final String dataFrame, final String columnName) {
         final List<String> existingData = getExistingDataFrameDatasets(reader, dataFrame);
-        if (!existingData.contains(label))
-            throw new IOException("Dataframe '" + dataFrame + "' does not contain '" + label + "'.");
+        if (!existingData.contains(columnName))
+            throw new IllegalArgumentException("Dataframe '" + dataFrame + "' does not contain '" + columnName + "'.");
 
-        // TODO: this returns null for non-readble datatypes (e.g. string); is there a better way to treat string annotations?
-        final DatasetAttributes attributes = reader.getDatasetAttributes(dataFrame + "/" + label);
+        // TODO: this returns null for non-readable datatypes (e.g. string); is there a better way to treat string annotations?
+        final DatasetAttributes attributes = reader.getDatasetAttributes(dataFrame + "/" + columnName);
         if (attributes == null || attributes.getDataType() == null) {
             return null;
         }
 
-        return N5Utils.open(reader, dataFrame + "/" + label);
+        return N5Utils.open(reader, dataFrame + "/" + columnName);
     }
 
     public static List<String> getExistingDataFrameDatasets(final N5Reader reader, final String dataFrame) {
@@ -135,6 +135,7 @@ class AnnDataDetails {
         return Arrays.asList(names);
     }
 
+    // TODO: check metadata for all fields
     public static boolean isValidAnnData(final N5Reader n5) {
         try {
             return getFieldType(n5, "/").toString().equals(AnnDataFieldType.ANNDATA.toString());
@@ -143,7 +144,7 @@ class AnnDataDetails {
         }
     }
 
-    public static void writeEncoding(final N5Writer writer, final String path, final AnnDataFieldType type) {
+    public static void writeFieldType(final N5Writer writer, final String path, final AnnDataFieldType type) {
         writer.setAttribute(path, "encoding-type", type.getEncoding());
         writer.setAttribute(path, "encoding-version", type.getVersion());
     }
@@ -181,7 +182,7 @@ class AnnDataDetails {
                 throw new UnsupportedOperationException("Writing array data for " + type.toString() + " not supported.");
             }
             writer.setAttribute(path, "shape", new long[]{data.dimension(1), data.dimension(0)});
-            writeEncoding(writer, path, type);
+            writeFieldType(writer, path, type);
         } catch (final ExecutionException | InterruptedException e) {
             throw new IOException("Could not load dataset at '" + path + "'.", e);
         }
@@ -217,32 +218,32 @@ class AnnDataDetails {
 
     public static void createDataFrame(final N5Writer writer, final String path, final List<String> index) {
         writer.createGroup(path);
-        writeEncoding(writer, path, AnnDataFieldType.DATA_FRAME);
+        writeFieldType(writer, path, AnnDataFieldType.DATA_FRAME);
         writer.setAttribute(path, "_index", "_index");
         // this should be an empty attribute, which N5 doesn't support -> use "" as surrogate
         writer.setAttribute(path, "column-order", "");
 
         writePrimitiveStringArray((N5HDF5Writer) writer, path + "/_index", index.toArray(new String[0]));
-        writeEncoding(writer, path + "/_index", AnnDataFieldType.STRING_ARRAY);
+        writeFieldType(writer, path + "/_index", AnnDataFieldType.STRING_ARRAY);
     }
 
-    public static <T extends NativeType<T> & RealType<T>> void addToDataFrame(
+    public static <T extends NativeType<T> & RealType<T>> void addColumnToDataFrame(
             final N5Writer writer,
             final String dataFrame,
-            final String label,
+            final String columnName,
             final RandomAccessibleInterval<T> data,
             final N5Options options) throws IOException {
 
         final List<String> existingData = getExistingDataFrameDatasets(writer, dataFrame);
-        if (existingData.contains(label))
-            throw new IOException("Dataframe '" + dataFrame + "' already contains '" + label + "'.");
+        if (existingData.contains(columnName))
+            throw new IllegalArgumentException("Dataframe '" + dataFrame + "' already contains '" + columnName + "'.");
 
         try {
-            N5Utils.save(data, writer, dataFrame + "/" + label, options.blockSize, options.compression, options.exec);
-            existingData.add(label);
+            N5Utils.save(data, writer, dataFrame + "/" + columnName, options.blockSize, options.compression, options.exec);
+            existingData.add(columnName);
             writer.setAttribute(dataFrame, "column-order", existingData.toArray());
         } catch (final InterruptedException | ExecutionException e) {
-            throw new IOException("Could not write dataset '" + dataFrame + "/" + label + "'.", e);
+            throw new IOException("Could not write dataset '" + dataFrame + "/" + columnName + "'.", e);
         }
     }
 
@@ -253,10 +254,11 @@ class AnnDataDetails {
 
     protected static void createMapping(final N5Writer writer, final String path) {
         writer.createGroup(path);
-        writeEncoding(writer, path, AnnDataFieldType.MAPPING);
+        writeFieldType(writer, path, AnnDataFieldType.MAPPING);
     }
 
-    // functional interface with a lot of parameters
+
+    // interface used to make reading sparse arrays more generic
     @FunctionalInterface
     protected interface SparseArrayConstructor<
             D extends NativeType<D> & RealType<D>,

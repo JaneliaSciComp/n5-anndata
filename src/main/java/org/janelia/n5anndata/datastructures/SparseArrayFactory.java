@@ -12,30 +12,30 @@ import net.imglib2.type.numeric.NumericType;
 
 /**
  * Factory for {@link SparseArray}s.
- * @param <D> type of data
+ * @param <T> type of data
  * @param <I> type of indices
  */
 public class SparseArrayFactory<
-		D extends NumericType<D> & NativeType<D>,
-		I extends IntegerType<I> & NativeType<I>> extends ImgFactory<D> {
+		T extends NumericType<T> & NativeType<T>,
+		I extends IntegerType<I> & NativeType<I>> extends ImgFactory<T> {
 
 	protected final int leadingDimension;
 	protected final I indexType;
 
 
-	protected SparseArrayFactory(final D type, final I indexType, final int leadingDimension) {
+	protected SparseArrayFactory(final T type, final I indexType, final int leadingDimension) {
 		super(type);
 		this.leadingDimension = leadingDimension;
 		this.indexType = indexType;
 	}
 
 	@Override
-	public SparseArray<D, I> create(final long... dimensions) {
+	public SparseArray<T, I> create(final long... dimensions) {
 		if (dimensions.length != 2)
 			throw new IllegalArgumentException("Only 2D images are supported");
 
 		Dimensions.verify(dimensions);
-		final ArrayImg<D, ?> data = new ArrayImgFactory<>(type()).create(1);
+		final ArrayImg<T, ?> data = new ArrayImgFactory<>(type()).create(1);
 		final ArrayImg<I, ?> indices = new ArrayImgFactory<>(indexType).create(1);
 		final int secondaryDimension = 1 - leadingDimension;
 		final ArrayImg<I, ?> indptr = new ArrayImgFactory<>(indexType).create(dimensions[secondaryDimension] + 1);
@@ -54,7 +54,7 @@ public class SparseArrayFactory<
 	}
 
 	@Override
-	public Img<D> create(final long[] dim, final D type) {
+	public Img<T> create(final long[] dim, final T type) {
 		return create(dim);
 	}
 }

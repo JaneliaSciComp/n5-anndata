@@ -10,33 +10,33 @@ import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 
 public class CscArray<
-		D extends NumericType<D> & NativeType<D>,
-		I extends IntegerType<I> & NativeType<I>> extends SparseArray<D, I> {
+		T extends NumericType<T> & NativeType<T>,
+		I extends IntegerType<I> & NativeType<I>> extends SparseArray<T, I> {
 
-    public CscArray(final long numCols, final long numRows, final Img<D> data, final Img<I> indices, final Img<I> indptr) {
+    public CscArray(final long numCols, final long numRows, final Img<T> data, final Img<I> indices, final Img<I> indptr) {
         super(numCols, numRows, data, indices, indptr);
     }
 
 	@Override
-	public RandomAccess<D> randomAccess() {
+	public RandomAccess<T> randomAccess() {
 		return new SparseRandomAccess<>(this, 1);
 	}
 
 	@Override
-	public Cursor<D> localizingCursor() {
+	public Cursor<T> localizingCursor() {
 		return new SparseLocalizingCursor<>(this, 1, data.firstElement());
 	}
 
 	@Override
-	public CscArray<D,I> copy() {
-		final Img<D> dataCopy = data.copy();
+	public CscArray<T,I> copy() {
+		final Img<T> dataCopy = data.copy();
 		final Img<I> indicesCopy = indices.copy();
 		final Img<I> indptrCopy = indptr.copy();
 		return new CscArray<>(dimension(0), dimension(1), dataCopy, indicesCopy, indptrCopy);
 	}
 
 	@Override
-	public ImgFactory<D> factory() {
+	public ImgFactory<T> factory() {
 		return new SparseArrayFactory<>(data.getAt(0), indices.getAt(0), 1);
 	}
 

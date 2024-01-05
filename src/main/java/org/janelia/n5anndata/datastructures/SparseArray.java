@@ -14,18 +14,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 abstract public class SparseArray<
-        D extends NumericType<D> & NativeType<D>,
-        I extends IntegerType<I> & NativeType<I>> implements Img<D> {
+        T extends NumericType<T> & NativeType<T>,
+        I extends IntegerType<I> & NativeType<I>> implements Img<T> {
 
     protected final long[] max;
-    protected final Img<D> data;
+    protected final Img<T> data;
     protected final Img<I> indices;
     protected final Img<I> indptr;
 
     public SparseArray(
             final long numCols,
             final long numRows,
-            final Img<D> data,
+            final Img<T> data,
             final Img<I> indices,
             final Img<I> indptr
     ) {
@@ -120,11 +120,11 @@ abstract public class SparseArray<
     }
 
     @Override
-    public RandomAccess<D> randomAccess(final Interval interval) {
+    public RandomAccess<T> randomAccess(final Interval interval) {
         return randomAccess();
     }
 
-    public Img<D> getDataArray() {
+    public Img<T> getDataArray() {
         return data;
     }
 
@@ -137,7 +137,7 @@ abstract public class SparseArray<
     }
 
     @Override
-    public Cursor<D> cursor() {
+    public Cursor<T> cursor() {
         return localizingCursor();
     }
 

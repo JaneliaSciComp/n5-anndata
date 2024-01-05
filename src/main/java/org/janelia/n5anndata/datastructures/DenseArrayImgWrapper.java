@@ -11,33 +11,33 @@ import net.imglib2.type.numeric.NumericType;
 
 /**
  * A wrapper for ImgLib2 {@link Img} that implements the AnnData field type {@link DenseArray}.
- * @param <D> Numeric and native {@link Type} of the data
+ * @param <T> Numeric and native {@link Type} of the data
  */
-public class DenseArrayImgWrapper<D extends NumericType<D> & NativeType<D>> implements DenseArray<D> {
-	private final Img<D> img;
+public class DenseArrayImgWrapper<T extends NumericType<T> & NativeType<T>> implements DenseArray<T> {
+	private final Img<T> img;
 
-	public DenseArrayImgWrapper(final Img<D> img) {
+	public DenseArrayImgWrapper(final Img<T> img) {
 		this.img = img;
 	}
 
 
 	@Override
-	public ImgFactory<D> factory() {
+	public ImgFactory<T> factory() {
 		return img.factory();
 	}
 
 	@Override
-	public Img<D> copy() {
+	public Img<T> copy() {
 		return img.copy();
 	}
 
 	@Override
-	public Cursor<D> cursor() {
+	public Cursor<T> cursor() {
 		return img.cursor();
 	}
 
 	@Override
-	public Cursor<D> localizingCursor() {
+	public Cursor<T> localizingCursor() {
 		return img.localizingCursor();
 	}
 
@@ -62,12 +62,12 @@ public class DenseArrayImgWrapper<D extends NumericType<D> & NativeType<D>> impl
 	}
 
 	@Override
-	public RandomAccess<D> randomAccess() {
+	public RandomAccess<T> randomAccess() {
 		return img.randomAccess();
 	}
 
 	@Override
-	public RandomAccess<D> randomAccess(final Interval interval) {
+	public RandomAccess<T> randomAccess(final Interval interval) {
 		return img.randomAccess(interval);
 	}
 

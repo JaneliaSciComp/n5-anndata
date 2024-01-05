@@ -8,18 +8,18 @@ import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 
 public class SparseRandomAccess<
-        D extends NumericType<D> & NativeType<D>,
-        I extends IntegerType<I> & NativeType<I>> extends AbstractLocalizable implements RandomAccess<D> {
+        T extends NumericType<T> & NativeType<T>,
+        I extends IntegerType<I> & NativeType<I>> extends AbstractLocalizable implements RandomAccess<T> {
 
-    protected final SparseArray<D, I> rai;
-    protected final RandomAccess<D> dataAccess;
+    protected final SparseArray<T, I> rai;
+    protected final RandomAccess<T> dataAccess;
     protected final RandomAccess<I> indicesAccess;
     protected final RandomAccess<I> indptrAccess;
     protected final int leadingDim;
     protected final int secondaryDim;
-    protected final D fillValue;
+    protected final T fillValue;
 
-    public SparseRandomAccess(final SparseArray<D, I> rai, final int leadingDim) {
+    public SparseRandomAccess(final SparseArray<T, I> rai, final int leadingDim) {
         super(rai.numDimensions());
         this.rai = rai;
         this.dataAccess = rai.data.randomAccess();
@@ -32,7 +32,7 @@ public class SparseRandomAccess<
         this.fillValue.setZero();
     }
 
-    public SparseRandomAccess(final SparseRandomAccess<D, I> ra) {
+    public SparseRandomAccess(final SparseRandomAccess<T, I> ra) {
         super(ra.rai.numDimensions());
 
         this.rai = ra.rai;
@@ -121,7 +121,7 @@ public class SparseRandomAccess<
     }
 
     @Override
-    public D get() {
+    public T get() {
 
         // determine range of indices to search
         indptrAccess.setPosition(position[secondaryDim], 0);
@@ -152,7 +152,7 @@ public class SparseRandomAccess<
     }
 
     @Override
-    public RandomAccess<D> copy() {
+    public RandomAccess<T> copy() {
         return new SparseRandomAccess<>(this);
     }
 }

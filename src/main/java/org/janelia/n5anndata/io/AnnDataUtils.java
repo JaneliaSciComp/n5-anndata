@@ -27,6 +27,10 @@ import java.util.concurrent.ExecutionException;
 
 
 class AnnDataUtils {
+    public static void initializeAnnData(final N5Writer writer) {
+        writer.createGroup("/");
+        writeFieldType(writer, "/", AnnDataFieldType.ANNDATA);
+    }
 
     public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
     Img<T> readNumericalArray(final N5Reader reader, final String path) {

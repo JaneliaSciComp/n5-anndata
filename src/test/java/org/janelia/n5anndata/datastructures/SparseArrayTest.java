@@ -9,6 +9,8 @@ import net.imglib2.type.numeric.integer.LongType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.Views;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayNameGeneration;
+import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -20,13 +22,14 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 
+@DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 public class SparseArrayTest {
 
-	public static final double DELTA = 1e-6;
+	private static final double DELTA = 1e-6;
 	protected static Map<String, SparseArray<DoubleType, LongType>> sparseMatrices;
 
 	@Test
-	public void CsrSetupIsCorrect() {
+	public void csr_setup_is_correct() {
 		final CsrArray<DoubleType, LongType> csr = setupCsr();
 		assertEquals(2, csr.numDimensions());
 		assertArrayEquals(new long[]{0, 0}, csr.minAsLongArray());
@@ -34,7 +37,7 @@ public class SparseArrayTest {
 	}
 
 	@Test
-	public void iterationOrderEqualityTestIsCorrect() {
+	public void iteration_order_equality_test_is_correct() {
 		final CsrArray<DoubleType, LongType> csr = setupCsr();
 		final CsrArray<DoubleType, LongType> csr2 = csr.copy();
 		final CscArray<DoubleType, LongType> csc = setupCsc();
@@ -45,7 +48,7 @@ public class SparseArrayTest {
 	}
 
 	@Test
-	public void CsrNonzeroEntriesAreCorrect() {
+	public void csr_nonzero_entries_are_correct() {
 		final int[] x = new int[]{2, 5, 0, 6, 9};
 		final int[] y = new int[]{0, 1, 2, 8, 8};
 
@@ -56,14 +59,14 @@ public class SparseArrayTest {
 	}
 
 	@Test
-	public void sparseHasCorrectNumberOfNonzeros() {
+	public void sparse_has_correct_number_of_nonzeros() {
 		for (final Map.Entry<String, SparseArray<DoubleType, LongType>> entry : sparseMatrices.entrySet()) {
 			assertEquals(5, SparseArray.getNumberOfNonzeros(entry.getValue()), "Mismatch for " + entry.getKey());
 		}
 	}
 
 	@Test
-	public void conversionToSparseIsCorrect() {
+	public void conversion_to_sparse_is_correct() {
 		for (final SparseArray<DoubleType, LongType> sparse : sparseMatrices.values()) {
 			assertEquals(5, SparseArray.getNumberOfNonzeros(sparse));
 			final SparseArray<DoubleType, LongType> newCsr = SparseArray.convertToSparse(sparse, 0);
@@ -76,7 +79,7 @@ public class SparseArrayTest {
 	}
 
 	@Test
-	public void CscIsCsrTransposed() {
+	public void csc_is_csr_transposed() {
 		final CsrArray<DoubleType, LongType> csr = setupCsr();
 		final CscArray<DoubleType, LongType> csc = setupCsc();
 		assert2DRaiEquals(csr, Views.permute(csc, 0, 1));

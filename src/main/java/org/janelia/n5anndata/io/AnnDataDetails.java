@@ -1,8 +1,5 @@
-package io;
+package org.janelia.n5anndata.io;
 
-import anndata.CompressedStorageRai;
-import anndata.CscRandomAccessibleInterval;
-import anndata.CsrRandomAccessibleInterval;
 import ch.systemsx.cisd.hdf5.HDF5Factory;
 import ch.systemsx.cisd.hdf5.IHDF5Reader;
 import ch.systemsx.cisd.hdf5.IHDF5StringWriter;
@@ -12,6 +9,9 @@ import net.imglib2.img.Img;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.IntegerType;
+import org.janelia.n5anndata.datastructures.CscArray;
+import org.janelia.n5anndata.datastructures.CsrArray;
+import org.janelia.n5anndata.datastructures.SparseArray;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
@@ -28,7 +28,8 @@ import java.util.concurrent.ExecutionException;
 
 class AnnDataDetails {
 
-    public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>> RandomAccessibleInterval<T> readArray(N5Reader reader, String path) throws IOException {
+    public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
+    Img<T> readArray(N5Reader reader, String path) throws IOException {
         final AnnDataFieldType type = getFieldType(reader, path);
         switch (type) {
             case MISSING:
@@ -37,9 +38,9 @@ class AnnDataDetails {
             case DENSE_ARRAY:
                 return N5Utils.open(reader, path);
             case CSR_MATRIX:
-                return openSparseArray(reader, path, CsrRandomAccessibleInterval<T,I>::new); // row
+                return openSparseArray(reader, path, CsrArray<T,I>::new); // row
             case CSC_MATRIX:
-                return openSparseArray(reader, path, CscRandomAccessibleInterval<T,I>::new); // column
+                return openSparseArray(reader, path, CscArray<T,I>::new); // column
             default:
                 throw new UnsupportedOperationException("Reading data for " + type + " not supported.");
         }
@@ -51,14 +52,15 @@ class AnnDataDetails {
         return AnnDataFieldType.fromString(encoding, version);
     }
 
-    protected static <D extends NativeType<D> & RealType<D>, I extends NativeType<I> & IntegerType<I>> CompressedStorageRai<D, I> openSparseArray(
+    protected static <D extends NativeType<D> & RealType<D>, I extends NativeType<I> & IntegerType<I>>
+    SparseArray<D, I> openSparseArray(
             N5Reader reader,
             String path,
             SparseArrayConstructor<D, I> constructor) throws IOException {
 
-        final RandomAccessibleInterval<D> sparseData = N5Utils.open(reader, path + "/data");
-        final RandomAccessibleInterval<I> indices = N5Utils.open(reader, path + "/indices");
-        final RandomAccessibleInterval<I> indptr = N5Utils.open(reader, path + "/indptr");
+        final Img<D> sparseData = N5Utils.open(reader, path + "/data");
+        final Img<I> indices = N5Utils.open(reader, path + "/indices");
+        final Img<I> indptr = N5Utils.open(reader, path + "/indptr");
 
         final long[] shape = reader.getAttribute(path, "shape", long[].class);
         return constructor.apply(shape[1], shape[0], sparseData, indices, indptr);
@@ -146,13 +148,13 @@ class AnnDataDetails {
     public static <T extends NativeType<T> & RealType<T>> void writeArray(
             N5Writer writer,
             String path,
-            RandomAccessibleInterval<T> data,
+            Img<T> data,
             N5Options options) throws IOException {
 
         AnnDataFieldType type = AnnDataFieldType.DENSE_ARRAY;
-        if (data instanceof CsrRandomAccessibleInterval)
+        if (data instanceof CsrArray)
             type = AnnDataFieldType.CSR_MATRIX;
-        if (data instanceof CscRandomAccessibleInterval)
+        if (data instanceof CscArray)
             type = AnnDataFieldType.CSC_MATRIX;
         writeArray(writer, path, data, options, type);
     }
@@ -160,7 +162,7 @@ class AnnDataDetails {
     public static <T extends NativeType<T> & RealType<T>> void writeArray(
             N5Writer writer,
             String path,
-            RandomAccessibleInterval<T> data,
+            Img<T> data,
             N5Options options,
             AnnDataFieldType type) throws IOException {
 
@@ -182,22 +184,22 @@ class AnnDataDetails {
     public static <T extends NativeType<T> & RealType<T>> void writeSparseArray(
             N5Writer writer,
             String path,
-            RandomAccessibleInterval<T> data,
+            Img<T> data,
             N5Options options,
             AnnDataFieldType type) throws IOException, ExecutionException, InterruptedException {
 
         if (type != AnnDataFieldType.CSR_MATRIX && type != AnnDataFieldType.CSC_MATRIX)
             throw new IllegalArgumentException("Sparse array type must be CSR or CSC.");
 
-        CompressedStorageRai<T, ?> sparse;
-        final boolean typeFitsData = (type == AnnDataFieldType.CSR_MATRIX && data instanceof CsrRandomAccessibleInterval)
-                || (type == AnnDataFieldType.CSC_MATRIX && data instanceof CscRandomAccessibleInterval);
+        SparseArray<T, ?> sparse;
+        final boolean typeFitsData = (type == AnnDataFieldType.CSR_MATRIX && data instanceof CsrArray)
+                || (type == AnnDataFieldType.CSC_MATRIX && data instanceof CscArray);
         if (typeFitsData) {
-           sparse = (CompressedStorageRai<T, ?>) data;
+           sparse = (SparseArray<T, ?>) data;
         }
         else {
             final int leadingDim = (type == AnnDataFieldType.CSR_MATRIX) ? 0 : 1;
-            sparse = CompressedStorageRai.convertToSparse(data, leadingDim);
+            sparse = SparseArray.convertToSparse(data, leadingDim);
         }
 
         writer.createGroup(path);
@@ -293,11 +295,11 @@ class AnnDataDetails {
     private interface SparseArrayConstructor<
             D extends NativeType<D> & RealType<D>,
             I extends NativeType<I> & IntegerType<I>> {
-        CompressedStorageRai<D, I> apply(
+        SparseArray<D, I> apply(
                 long numCols,
                 long numRows,
-                RandomAccessibleInterval<D> data,
-                RandomAccessibleInterval<I> indices,
-                RandomAccessibleInterval<I> indptr);
+                Img<D> data,
+                Img<I> indices,
+                Img<I> indptr);
     }
 }

@@ -43,7 +43,8 @@ abstract public class SparseArray<
         return convertToSparse(img, 0); // CSR per default
     }
 
-    public static <T extends NumericType<T> & NativeType<T>> SparseArray<T, LongType> convertToSparse(Img<T> img, int leadingDimension) {
+    public static <T extends NumericType<T> & NativeType<T>> SparseArray<T, LongType>
+    convertToSparse(Img<T> img, int leadingDimension) {
         if (leadingDimension != 0 && leadingDimension != 1)
             throw new IllegalArgumentException("Leading dimension in sparse array must be 0 or 1.");
 

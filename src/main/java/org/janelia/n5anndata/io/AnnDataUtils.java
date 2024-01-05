@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
-class AnnDataDetails {
+class AnnDataUtils {
 
     public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
     Img<T> readNumericalArray(final N5Reader reader, final String path) {

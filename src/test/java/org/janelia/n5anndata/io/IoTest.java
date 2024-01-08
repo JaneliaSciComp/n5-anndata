@@ -6,13 +6,16 @@ import org.janelia.saalfeldlab.n5.hdf5.N5HDF5Writer;
 import org.janelia.saalfeldlab.n5.zarr.N5ZarrWriter;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -73,6 +76,27 @@ public class IoTest {
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
 		}
+	}
+
+	/**
+	 To run this test, you need to have python installed and the following packages
+	 available: anndata, numpy, scipy, pandas, zarr, h5py.
+	 - If run from an IDE, you need to add the python path to the environment variables.
+	 - If run from the command line, you need to have python in your path (e.g. the
+	   correct conda environment is activated).
+	 If the test is not able to run, it will be skipped.
+	 */
+	@Test
+	public void consistency_with_python() {
+		boolean canExecutePython = true;
+		try {
+			final Process process = Runtime.getRuntime().exec("python src/test/python/generate_test_dataset.py " + testDirectoryPath.toString());
+			process.waitFor();
+			process.destroy();
+		} catch (final IOException | InterruptedException e) {
+			canExecutePython = false;
+		}
+		Assumptions.assumeTrue(canExecutePython, "Could not execute python script, consistency test skipped.");
 	}
 
 	protected static List<Named<Supplier<N5Writer>>> provideDatasetNames() {

@@ -23,5 +23,8 @@
 hs_err_pid*
 replay_pid*
 
+# python
+__pycache__/
+
 # report files
 target/

@@ -89,8 +89,10 @@ public class IoTest {
 	@Test
 	public void consistency_with_python() {
 		boolean canExecutePython = true;
+		final String scriptPath = Paths.get("src", "test", "python").toString();
 		try {
-			final Process process = Runtime.getRuntime().exec("python src/test/python/generate_test_dataset.py " + testDirectoryPath.toString());
+			final String command = "python " + Paths.get(scriptPath + "test_consistency.py");
+			final Process process = Runtime.getRuntime().exec(command + " " + testDirectoryPath.toString());
 			process.waitFor();
 			process.destroy();
 		} catch (final IOException | InterruptedException e) {
@@ -102,9 +104,9 @@ public class IoTest {
 	protected static List<Named<Supplier<N5Writer>>> provideDatasetNames() {
 		final String basePath = testDirectoryPath.toString();
 		return Arrays.asList(
-				named("HDF5", () -> new N5HDF5Writer(basePath + "data.h5ad")),
-				named("Zarr", () -> new N5ZarrWriter(basePath + "data.zarr")),
-				named("N5", () -> new N5FSWriter(basePath + "data.n5ad")));
+				named("HDF5", () -> new N5HDF5Writer(Paths.get(basePath, "data.h5ad").toString())),
+				named("Zarr", () -> new N5ZarrWriter(Paths.get(basePath, "data.zarr").toString())),
+				named("N5", () -> new N5FSWriter(Paths.get(basePath, "data.n5ad").toString())));
 	}
 
 	private static void deleteRecursively(final Path path) throws IOException {

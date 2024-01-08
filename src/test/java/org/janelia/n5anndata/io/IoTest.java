@@ -1,8 +1,16 @@
 package org.janelia.n5anndata.io;
 
+import net.imglib2.img.Img;
+import net.imglib2.type.numeric.real.DoubleType;
+import net.imglib2.type.numeric.real.FloatType;
+import org.janelia.saalfeldlab.n5.Compression;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5FSWriter;
+import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
+import org.janelia.saalfeldlab.n5.hdf5.N5HDF5Reader;
 import org.janelia.saalfeldlab.n5.hdf5.N5HDF5Writer;
+import org.janelia.saalfeldlab.n5.zarr.N5ZarrReader;
 import org.janelia.saalfeldlab.n5.zarr.N5ZarrWriter;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -18,6 +26,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,6 +34,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
@@ -87,18 +97,76 @@ public class IoTest {
 	 If the test is not able to run, it will be skipped.
 	 */
 	@Test
-	public void consistency_with_python() {
-		boolean canExecutePython = true;
-		final String scriptPath = Paths.get("src", "test", "python").toString();
-		try {
-			final String command = "python " + Paths.get(scriptPath + "test_consistency.py");
-			final Process process = Runtime.getRuntime().exec(command + " " + testDirectoryPath.toString());
-			process.waitFor();
-			process.destroy();
-		} catch (final IOException | InterruptedException e) {
-			canExecutePython = false;
+	public void consistency_with_python()
+			throws ExecutionException, InterruptedException, IOException {
+		final List<String> extensions = Arrays.asList(".h5ad", ".zarr");
+		for (final String ext : extensions) {
+			final String pythonDataset = Paths.get(testDirectoryPath.toString(), "data_python") + ext;
+			final String javaDataset = Paths.get(testDirectoryPath.toString(), "data_java") + ext;
+
+			final boolean canExecutePython = executePythonScript("generate_test_dataset.py", pythonDataset);
+			Assumptions.assumeTrue(canExecutePython, "Could not execute python script, consistency test skipped.");
+
+			resaveDataset(pythonDataset, javaDataset);
+
+			executePythonScript("validate_anndata.py", javaDataset);
+			deleteRecursively(Paths.get(pythonDataset));
+			deleteRecursively(Paths.get(javaDataset));
 		}
-		Assumptions.assumeTrue(canExecutePython, "Could not execute python script, consistency test skipped.");
+	}
+
+	private static boolean executePythonScript(final String script, final String args) {
+		final String scriptBasePath = Paths.get("src", "test", "python").toString();
+		final String scriptPath = Paths.get(scriptBasePath, script).toString();
+		final String cmd = "python " + scriptPath + " " + args;
+		try {
+			final Process process = Runtime.getRuntime().exec(cmd);
+			new BufferedReader(new InputStreamReader(process.getErrorStream())).lines().forEach(System.out::println);
+			if (process.waitFor() != 0) {
+				throw new RuntimeException("Python script failed: " + cmd);
+			}
+			process.destroy();
+			return true;
+		} catch (final IOException | InterruptedException e) {
+			return false;
+		}
+	}
+
+	private static void resaveDataset(final String pythonDataset, final String javaDataset)
+			throws ExecutionException, InterruptedException, IOException {
+		final N5Reader reader = getReaderFor(pythonDataset);
+		final N5Writer writer = getWriterFor(javaDataset);
+
+		final Img<DoubleType> umap1 = AnnDataUtils.readNumericalArray(reader, "obsm/X_umap");
+		final N5Options options = getOptionsFor(reader, "obsm/X_umap");
+		AnnDataUtils.writeArray(writer, "obsm/X_umap", umap1, options, AnnDataFieldType.DENSE_ARRAY);
+	}
+
+	private static N5Reader getReaderFor(final String dataset) {
+		if (dataset.endsWith(".h5ad")) {
+			return new N5HDF5Reader(dataset);
+		} else if (dataset.endsWith(".zarr")) {
+			return new N5ZarrReader(dataset);
+		} else {
+			throw new IllegalArgumentException("Unknown file extension: " + dataset);
+		}
+	}
+
+	private static N5Writer getWriterFor(final String dataset) {
+		if (dataset.endsWith(".h5ad")) {
+			return new N5HDF5Writer(dataset);
+		} else if (dataset.endsWith(".zarr")) {
+			return new N5ZarrWriter(dataset);
+		} else {
+			throw new IllegalArgumentException("Unknown file extension: " + dataset);
+		}
+	}
+
+	private static N5Options getOptionsFor(final N5Reader reader, final String path) {
+		final DatasetAttributes attributes = reader.getDatasetAttributes(path);
+		final int[] blockSize = attributes.getBlockSize();
+		final Compression compression = attributes.getCompression();
+		return new N5Options(blockSize, compression, executorService);
 	}
 
 	protected static List<Named<Supplier<N5Writer>>> provideDatasetNames() {

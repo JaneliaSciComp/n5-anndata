@@ -42,3 +42,43 @@ def create_test_anndata():
     adata.layers["log"] = np.log1p(adata.X)
 
     return adata
+
+
+def _check(condition, name):
+    if not condition:
+        raise ValueError(f"Validation failed for '{name}'")
+
+
+def compare_anndatas(expected, actual):
+    """
+    Compare two AnnData objects.
+
+    Args:
+        expected: AnnData object
+        actual: AnnData object
+
+    Throws:
+        ValueError: if validation fails
+    """
+
+    # compare sparse matrices
+    _check(np.allclose(expected.X.toarray(), actual.X.toarray()), "X (scipy csr, float32)")
+    _check(np.allclose(expected.obsp["rnd"].toarray(), actual.obsp["rnd"].toarray()), "obsp (scipy csr, float64)")
+    _check(np.allclose(expected.varp["rnd"].toarray(), actual.varp["rnd"].toarray()), "varp (scipy csc, int16)")
+
+    # compare string arrays
+    _check(np.array_equal(expected.obs_names, actual.obs_names), "obs_names")
+    _check(np.array_equal(expected.var_names, actual.var_names), "var_names")
+
+    # compare categoricals
+    _check(np.array_equal(expected.obs["cell_type"], actual.obs["cell_type"]), "obs['cell_type'] (categorical)")
+
+    # compare dense arrays
+    _check(np.allclose(expected.var["gene_stuff1"], actual.var["gene_stuff1"]), "var['gene_stuff1'] (int32)")
+    _check(np.allclose(expected.var["gene_stuff2"], actual.var["gene_stuff2"]), "var['gene_stuff2'] (int64)")
+    _check(np.allclose(expected.obsm["X_umap"], actual.obsm["X_umap"]), "obsm['X_umap'] (float64)")
+    _check(np.allclose(expected.varm["X_umap"], actual.varm["X_umap"]), "varm['X_umap'] (float64)")
+
+    # compare remaining fields
+    _check(np.array_equal(expected.uns["random"], actual.uns["random"]), "uns['random'] (float64)")
+    _check(np.allclose(expected.layers["log"].toarray(), actual.layers["log"].toarray()), "layers['log'] (scipy csr, float32)")

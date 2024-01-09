@@ -60,18 +60,19 @@ class AnnDataUtils {
     }
 
     public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
-    Img<T> readNumericalArray(final N5Reader reader, final String path) {
-        final AnnDataFieldType type = getFieldType(reader, path);
+    Img<T> readNumericalArray(final N5Reader reader, final AnnDataField field, final String path) {
+        final String completePath = field.getCompletePath(path);
+        final AnnDataFieldType type = getFieldType(reader, completePath);
         switch (type) {
             case MISSING:
                 System.out.println("Array is missing metadata. Assuming dense array.");
-                return N5Utils.open(reader, path);
+                return N5Utils.open(reader, completePath);
             case DENSE_ARRAY:
-                return N5Utils.open(reader, path);
+                return N5Utils.open(reader, completePath);
             case CSR_MATRIX:
-                return openSparseArray(reader, path, CsrArray<T,I>::new); // row
+                return openSparseArray(reader, completePath, CsrArray<T,I>::new); // row
             case CSC_MATRIX:
-                return openSparseArray(reader, path, CscArray<T,I>::new); // column
+                return openSparseArray(reader, completePath, CscArray<T,I>::new); // column
             default:
                 throw new UnsupportedOperationException("Reading numerical array data from " + type + " not supported.");
         }

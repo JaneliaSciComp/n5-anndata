@@ -1,7 +1,6 @@
 package org.janelia.n5anndata.io;
 
 import net.imglib2.img.Img;
-import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
 import net.imglib2.type.numeric.integer.ShortType;
@@ -142,49 +141,49 @@ public class IoTest {
 		final N5Writer writer = getWriterFor(javaDataset);
 
 		String path = "X";
-		final Img<DoubleType> X = AnnDataUtils.readNumericalArray(reader, path);
+		final Img<DoubleType> X = AnnDataUtils.readNumericalArray(reader, AnnDataField.X, "");
 		N5Options options = getOptionsFor(reader, path);
 		AnnDataUtils.writeSparseArray(writer, path, X, options, AnnDataFieldType.CSR_MATRIX);
 
 		path = "obsp/rnd";
-		final Img<DoubleType> csr = AnnDataUtils.readNumericalArray(reader, path);
+		final Img<DoubleType> csr = AnnDataUtils.readNumericalArray(reader, AnnDataField.OBSP, "rnd");
 		options = getOptionsFor(reader, path);
 		AnnDataUtils.writeArray(writer, path, csr, options, AnnDataFieldType.CSR_MATRIX);
 
 		path = "varp/rnd";
-		final Img<ShortType> csc = AnnDataUtils.readNumericalArray(reader, path);
+		final Img<ShortType> csc = AnnDataUtils.readNumericalArray(reader, AnnDataField.VARP, "rnd");
 		options = getOptionsFor(reader, path);
 		AnnDataUtils.writeArray(writer, path, csc, options, AnnDataFieldType.CSC_MATRIX);
 
 		// TODO: write methods for handling obs_names, var_names, and obs/cell_types
 
 		path = "var/gene_stuff1";
-		final Img<IntType> genes1 = AnnDataUtils.readNumericalArray(reader, path);
+		final Img<IntType> genes1 = AnnDataUtils.readNumericalArray(reader, AnnDataField.VAR, "gene_stuff1");
 		options = getOptionsFor(reader, path);
 		AnnDataUtils.writeArray(writer, path, genes1, options, AnnDataFieldType.DENSE_ARRAY);
 
 		path = "var/gene_stuff2";
-		final Img<LongType> genes2 = AnnDataUtils.readNumericalArray(reader, path);
+		final Img<LongType> genes2 = AnnDataUtils.readNumericalArray(reader, AnnDataField.VAR, "gene_stuff2");
 		options = getOptionsFor(reader, path);
 		AnnDataUtils.writeArray(writer, path, genes2, options, AnnDataFieldType.DENSE_ARRAY);
 
 		path = "obs/X_umap";
-		final Img<DoubleType> umap1 = AnnDataUtils.readNumericalArray(reader, path);
+		final Img<DoubleType> umap1 = AnnDataUtils.readNumericalArray(reader, AnnDataField.OBS, "X_umap");
 		options = getOptionsFor(reader, path);
 		AnnDataUtils.writeArray(writer, path, umap1, options, AnnDataFieldType.DENSE_ARRAY);
 
 		path = "varm/X_umap";
-		final Img<DoubleType> umap2 = AnnDataUtils.readNumericalArray(reader, path);
+		final Img<DoubleType> umap2 = AnnDataUtils.readNumericalArray(reader, AnnDataField.VARM, "X_umap");
 		options = getOptionsFor(reader, path);
 		AnnDataUtils.writeArray(writer, path, umap2, options, AnnDataFieldType.DENSE_ARRAY);
 
 		path = "uns/random";
-		final Img<DoubleType> uns = AnnDataUtils.readNumericalArray(reader, path);
+		final Img<DoubleType> uns = AnnDataUtils.readNumericalArray(reader, AnnDataField.UNS, "random");
 		options = getOptionsFor(reader, path);
 		AnnDataUtils.writeArray(writer, path, uns, options, AnnDataFieldType.DENSE_ARRAY);
 
 		path = "layers/log";
-		final Img<FloatType> log = AnnDataUtils.readNumericalArray(reader, path);
+		final Img<FloatType> log = AnnDataUtils.readNumericalArray(reader, AnnDataField.LAYERS, "log");
 		options = getOptionsFor(reader, path);
 		AnnDataUtils.writeArray(writer, path, log, options, AnnDataFieldType.CSR_MATRIX);
 	}

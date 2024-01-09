@@ -59,6 +59,21 @@ class AnnDataUtils {
         writeFieldType(writer, ROOT, AnnDataFieldType.ANNDATA);
     }
 
+    // TODO: check metadata for all fields
+    public static boolean isValidAnnData(final N5Reader n5) {
+        try {
+            return getFieldType(n5, ROOT).toString().equals(AnnDataFieldType.ANNDATA.toString());
+        } catch (final Exception e) {
+            return false;
+        }
+    }
+
+    public static AnnDataFieldType getFieldType(final N5Reader reader, final String path) {
+        final String encoding = reader.getAttribute(path, ENCODING_KEY, String.class);
+        final String version = reader.getAttribute(path, VERSION_KEY, String.class);
+        return AnnDataFieldType.fromString(encoding, version);
+    }
+
     public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
     Img<T> readNumericalArray(final N5Reader reader, final AnnDataField field, final String path) {
         final String completePath = field.getPath(path);
@@ -76,12 +91,6 @@ class AnnDataUtils {
             default:
                 throw new UnsupportedOperationException("Reading numerical array data from " + type + " not supported.");
         }
-    }
-
-    public static AnnDataFieldType getFieldType(final N5Reader reader, final String path) {
-        final String encoding = reader.getAttribute(path, ENCODING_KEY, String.class);
-        final String version = reader.getAttribute(path, VERSION_KEY, String.class);
-        return AnnDataFieldType.fromString(encoding, version);
     }
 
     private static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
@@ -168,15 +177,6 @@ class AnnDataUtils {
         }
 
         return Arrays.asList(names);
-    }
-
-    // TODO: check metadata for all fields
-    public static boolean isValidAnnData(final N5Reader n5) {
-        try {
-            return getFieldType(n5, ROOT).toString().equals(AnnDataFieldType.ANNDATA.toString());
-        } catch (final Exception e) {
-            return false;
-        }
     }
 
     public static void writeFieldType(final N5Writer writer, final AnnDataField field, final String path, final AnnDataFieldType type) {

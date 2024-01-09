@@ -107,7 +107,7 @@ class AnnDataUtils {
         return constructor.apply(shape[1], shape[0], sparseData, indices, indptr);
     }
 
-    public static List<String> readStringAnnotation(final N5Reader reader, final AnnDataField field, final String path) {
+    public static List<String> readStringArray(final N5Reader reader, final AnnDataField field, final String path) {
         final String completePath = field.getPath(path);
         final AnnDataFieldType type = getFieldType(reader, path);
         switch (type) {
@@ -130,6 +130,7 @@ class AnnDataUtils {
         return hdf5Reader.readStringArray(path);
     }
 
+    @Deprecated
     public static <T extends NativeType<T> & RealType<T>> RandomAccessibleInterval<T>
     readColumnFromDataFrame(final N5Reader reader, final AnnDataField field, final String dataFrame, final String columnName) {
         final String completePath = field.getPath(dataFrame);
@@ -234,11 +235,11 @@ class AnnDataUtils {
             writer.setAttribute(path, SHAPE_KEY, new long[]{data.dimension(1), data.dimension(0)});
             writeFieldType(writer, path, type);
         } catch (final ExecutionException | InterruptedException e) {
-            throw new IOException("Could not load dataset at '" + path + "'.", e);
+            throw new IOException("Could not write dataset at '" + path + "'.", e);
         }
     }
 
-    public static <T extends NativeType<T> & RealType<T>> void writeSparseArray(
+    private static <T extends NativeType<T> & RealType<T>> void writeSparseArray(
             final N5Writer writer,
             final AnnDataField field,
             final String path,
@@ -280,6 +281,7 @@ class AnnDataUtils {
         writeFieldType(writer, completePath + INDEX_DIR, AnnDataFieldType.STRING_ARRAY);
     }
 
+    @Deprecated
     public static <T extends NativeType<T> & RealType<T>> void addColumnToDataFrame(
             final N5Writer writer,
             final AnnDataField field,

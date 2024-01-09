@@ -142,7 +142,7 @@ public class IoTest {
 
 		final Img<DoubleType> X = AnnDataUtils.readNumericalArray(reader, AnnDataField.X, "");
 		N5Options options = getOptionsFor(reader, AnnDataField.X.getPath(""));
-		AnnDataUtils.writeSparseArray(writer, AnnDataField.X, "", X, options, AnnDataFieldType.CSR_MATRIX);
+		AnnDataUtils.writeArray(writer, AnnDataField.X, "", X, options, AnnDataFieldType.CSR_MATRIX);
 
 		String path = "rnd";
 		final Img<DoubleType> csr = AnnDataUtils.readNumericalArray(reader, AnnDataField.OBSP, "rnd");

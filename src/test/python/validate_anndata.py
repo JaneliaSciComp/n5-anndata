@@ -24,5 +24,5 @@ try:
     compare_anndatas(expected, actual)
 except Exception as e:
     sys.exit(f"Validation failed: {e}")
-finally:
-    sys.stderr.write("Validation successful\n")
+
+sys.stderr.write("Validation successful\n")

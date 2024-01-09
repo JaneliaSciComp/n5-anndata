@@ -284,7 +284,7 @@ class AnnDataUtils {
             final String columnName,
             final RandomAccessibleInterval<T> data,
             final N5Options options) throws IOException {
-
+        
         final String completePath = field.getPath(dataFrame);
         final List<String> existingData = getExistingDataFrameDatasets(writer, field, dataFrame);
         if (existingData.contains(columnName))
@@ -299,6 +299,23 @@ class AnnDataUtils {
         }
     }
 
+    public static void writeStringArray(final List<String> data, final N5Reader reader, final AnnDataField field, final String path, final N5Options options, final AnnDataFieldType type) {
+        field.checkIfAllows(type);
+        AnnDataFieldType.checkIfStringArray(type);
+        
+        final String completePath = field.getPath(path);
+        switch (type) {
+            case STRING_ARRAY:
+                if (reader instanceof N5HDF5Reader) {
+                    writePrimitiveStringArray((N5HDF5Writer) reader, completePath, data.toArray(new String[0]));
+                } else {
+                    throw new UnsupportedOperationException("Writing string arrays only supported for HDF5.");
+                }
+            case CATEGORICAL_ARRAY:
+                throw new UnsupportedOperationException("Writing categorical arrays not supported.");
+        }
+    }
+    
     private static void writePrimitiveStringArray(final N5HDF5Writer writer, final String path, final String[] array) {
         final IHDF5StringWriter stringWriter = HDF5Factory.open(writer.getFilename()).string();
         stringWriter.writeArrayVL(path, array);

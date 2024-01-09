@@ -181,9 +181,7 @@ class AnnDataUtils {
     }
 
     public static void writeFieldType(final N5Writer writer, final AnnDataField field, final String path, final AnnDataFieldType type) {
-        if (!field.allows(type)) {
-            throw new AnnDataException("Field '" + field + "' does not allow type '" + type + "'.");
-        }
+        field.checkIfAllows(type);
         final String completePath = field.getPath(path);
         writeFieldType(writer, completePath, type);
     }
@@ -194,10 +192,10 @@ class AnnDataUtils {
     }
 
     public static <T extends NativeType<T> & RealType<T>> void writeArray(
+            final Img<T> data,
             final N5Writer writer,
             final AnnDataField field,
             final String path,
-            final Img<T> data,
             final N5Options options) throws IOException {
 
         AnnDataFieldType type = AnnDataFieldType.DENSE_ARRAY;
@@ -208,20 +206,19 @@ class AnnDataUtils {
             type = AnnDataFieldType.CSC_MATRIX;
         }
 
-        writeArray(writer, field, path, data, options, type);
+        writeArray(data, writer, field, path, options, type);
     }
 
     public static <T extends NativeType<T> & RealType<T>> void writeArray(
+            final Img<T> data,
             final N5Writer writer,
             final AnnDataField field,
             final String path,
-            final Img<T> data,
             final N5Options options,
             final AnnDataFieldType type) throws IOException {
 
-        if (!field.allows(type)) {
-            throw new AnnDataException("Field '" + field + "' does not allow type '" + type + "'.");
-        }
+        field.checkIfAllows(type);
+        AnnDataFieldType.checkIfNumericalArray(type);
 
         try {
             if (type == AnnDataFieldType.DENSE_ARRAY) {
@@ -229,8 +226,6 @@ class AnnDataUtils {
                 N5Utils.save(data, writer, completePath, options.blockSize, options.compression, options.exec);
             } else if (type == AnnDataFieldType.CSR_MATRIX || type == AnnDataFieldType.CSC_MATRIX) {
                 writeSparseArray(writer, field, path, data, options, type);
-            } else {
-                throw new UnsupportedOperationException("Writing array data for " + type.toString() + " not supported.");
             }
             writer.setAttribute(path, SHAPE_KEY, new long[]{data.dimension(1), data.dimension(0)});
             writeFieldType(writer, path, type);

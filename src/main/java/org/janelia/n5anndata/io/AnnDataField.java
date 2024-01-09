@@ -56,8 +56,10 @@ public enum AnnDataField {
 		return Paths.get(basePath, subPath).toString();
 	}
 
-	public boolean allows(final AnnDataFieldType type) {
-		return allowedTypes.contains(type);
+	public void checkIfAllows(final AnnDataFieldType type) {
+		if (! allowedTypes.contains(type)) {
+			throw new AnnDataException("Field '" + this + "' does not allow type '" + type + "'.");
+		}
 	}
 
 	public String toString() {

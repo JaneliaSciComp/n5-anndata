@@ -27,9 +27,16 @@ import java.util.concurrent.ExecutionException;
 
 
 class AnnDataUtils {
+
+    private static final String ROOT = "/";
+    private static final String SEPARATOR = "/";
+
     public static void initializeAnnData(final N5Writer writer) {
-        writer.createGroup("/");
-        writeFieldType(writer, "/", AnnDataFieldType.ANNDATA);
+        if (writer.list(ROOT).length > 0) {
+            throw new AnnDataException("Cannot initialize AnnData: target container is not empty.");
+        }
+        writer.createGroup(ROOT);
+        writeFieldType(writer, ROOT, AnnDataFieldType.ANNDATA);
     }
 
     public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
@@ -56,13 +63,13 @@ class AnnDataUtils {
         return AnnDataFieldType.fromString(encoding, version);
     }
 
-    protected static <D extends NativeType<D> & RealType<D>, I extends NativeType<I> & IntegerType<I>>
-    SparseArray<D, I> openSparseArray(
+    protected static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
+    SparseArray<T, I> openSparseArray(
             final N5Reader reader,
             final String path,
-            final SparseArrayConstructor<D, I> constructor) {
+            final SparseArrayConstructor<T, I> constructor) {
 
-        final Img<D> sparseData = N5Utils.open(reader, path + "/data");
+        final Img<T> sparseData = N5Utils.open(reader, path + "/data");
         final Img<I> indices = N5Utils.open(reader, path + "/indices");
         final Img<I> indptr = N5Utils.open(reader, path + "/indptr");
 
@@ -99,12 +106,12 @@ class AnnDataUtils {
             throw new IllegalArgumentException("Dataframe '" + dataFrame + "' does not contain '" + columnName + "'.");
 
         // TODO: this returns null for non-readable datatypes (e.g. string); is there a better way to treat string annotations?
-        final DatasetAttributes attributes = reader.getDatasetAttributes(dataFrame + "/" + columnName);
+        final DatasetAttributes attributes = reader.getDatasetAttributes(dataFrame + SEPARATOR + columnName);
         if (attributes == null || attributes.getDataType() == null) {
             return null;
         }
 
-        return N5Utils.open(reader, dataFrame + "/" + columnName);
+        return N5Utils.open(reader, dataFrame + SEPARATOR + columnName);
     }
 
     public static List<String> getExistingDataFrameDatasets(final N5Reader reader, final String dataFrame) {
@@ -142,7 +149,7 @@ class AnnDataUtils {
     // TODO: check metadata for all fields
     public static boolean isValidAnnData(final N5Reader n5) {
         try {
-            return getFieldType(n5, "/").toString().equals(AnnDataFieldType.ANNDATA.toString());
+            return getFieldType(n5, ROOT).toString().equals(AnnDataFieldType.ANNDATA.toString());
         } catch (final Exception e) {
             return false;
         }
@@ -243,11 +250,11 @@ class AnnDataUtils {
             throw new IllegalArgumentException("Dataframe '" + dataFrame + "' already contains '" + columnName + "'.");
 
         try {
-            N5Utils.save(data, writer, dataFrame + "/" + columnName, options.blockSize, options.compression, options.exec);
+            N5Utils.save(data, writer, dataFrame + SEPARATOR + columnName, options.blockSize, options.compression, options.exec);
             existingData.add(columnName);
             writer.setAttribute(dataFrame, "column-order", existingData.toArray());
         } catch (final InterruptedException | ExecutionException e) {
-            throw new IOException("Could not write dataset '" + dataFrame + "/" + columnName + "'.", e);
+            throw new IOException("Could not write dataset '" + dataFrame + SEPARATOR + columnName + "'.", e);
         }
     }
 

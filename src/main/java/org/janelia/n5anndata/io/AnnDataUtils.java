@@ -61,7 +61,7 @@ class AnnDataUtils {
 
     public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
     Img<T> readNumericalArray(final N5Reader reader, final AnnDataField field, final String path) {
-        final String completePath = field.getCompletePath(path);
+        final String completePath = field.getPath(path);
         final AnnDataFieldType type = getFieldType(reader, completePath);
         switch (type) {
             case MISSING:
@@ -84,7 +84,7 @@ class AnnDataUtils {
         return AnnDataFieldType.fromString(encoding, version);
     }
 
-    protected static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
+    private static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
     SparseArray<T, I> openSparseArray(
             final N5Reader reader,
             final String path,
@@ -98,50 +98,53 @@ class AnnDataUtils {
         return constructor.apply(shape[1], shape[0], sparseData, indices, indptr);
     }
 
-    public static List<String> readStringAnnotation(final N5Reader reader, final String path) {
+    public static List<String> readStringAnnotation(final N5Reader reader, final AnnDataField field, final String path) {
+        final String completePath = field.getPath(path);
         final AnnDataFieldType type = getFieldType(reader, path);
         switch (type) {
             case STRING_ARRAY:
-                return readStringList(reader, path);
+                return readStringList(reader, completePath);
             case CATEGORICAL_ARRAY:
-                return readCategoricalList(reader, path);
+                return readCategoricalList(reader, completePath);
             default:
                 throw new UnsupportedOperationException("Reading string annotations for " + type + " not supported.");
         }
     }
 
-    protected static List<String> readStringList(final N5Reader reader, final String path) {
+    private static List<String> readStringList(final N5Reader reader, final String path) {
         final String[] array = readPrimitiveStringArray((N5HDF5Reader) reader, path);
         return Arrays.asList(array);
     }
 
-    protected static String[] readPrimitiveStringArray(final N5HDF5Reader reader, final String path) {
+    private static String[] readPrimitiveStringArray(final N5HDF5Reader reader, final String path) {
         final IHDF5Reader hdf5Reader = HDF5Factory.openForReading(reader.getFilename());
         return hdf5Reader.readStringArray(path);
     }
 
     public static <T extends NativeType<T> & RealType<T>> RandomAccessibleInterval<T>
-    readColumnFromDataFrame(final N5Reader reader, final String dataFrame, final String columnName) {
-        final List<String> existingData = getExistingDataFrameDatasets(reader, dataFrame);
+    readColumnFromDataFrame(final N5Reader reader, final AnnDataField field, final String dataFrame, final String columnName) {
+        final String completePath = field.getPath(dataFrame);
+        final List<String> existingData = getExistingDataFrameDatasets(reader, field, dataFrame);
         if (!existingData.contains(columnName))
-            throw new IllegalArgumentException("Dataframe '" + dataFrame + "' does not contain '" + columnName + "'.");
+            throw new IllegalArgumentException("Dataframe '" + completePath + "' does not contain '" + columnName + "'.");
 
         // TODO: this returns null for non-readable datatypes (e.g. string); is there a better way to treat string annotations?
-        final DatasetAttributes attributes = reader.getDatasetAttributes(dataFrame + SEPARATOR + columnName);
+        final DatasetAttributes attributes = reader.getDatasetAttributes(completePath + SEPARATOR + columnName);
         if (attributes == null || attributes.getDataType() == null) {
             return null;
         }
 
-        return N5Utils.open(reader, dataFrame + SEPARATOR + columnName);
+        return N5Utils.open(reader, completePath + SEPARATOR + columnName);
     }
 
-    public static List<String> getExistingDataFrameDatasets(final N5Reader reader, final String dataFrame) {
-        if (!reader.exists(dataFrame)) {
+    public static List<String> getExistingDataFrameDatasets(final N5Reader reader, final AnnDataField field, final String dataFrame) {
+        final String completePath = field.getPath(dataFrame);
+        if (!reader.exists(completePath)) {
             return new ArrayList<>();
         }
 
-        String[] rawArray = reader.getAttribute(dataFrame, COLUMN_ORDER_KEY, String[].class);
-        rawArray = (rawArray == null) ? reader.list(dataFrame) : rawArray;
+        String[] rawArray = reader.getAttribute(completePath, COLUMN_ORDER_KEY, String[].class);
+        rawArray = (rawArray == null) ? reader.list(completePath) : rawArray;
 
         if (rawArray == null || rawArray.length == 0) {
             return new ArrayList<>();
@@ -152,7 +155,7 @@ class AnnDataUtils {
         return datasets;
     }
 
-    protected static List<String> readCategoricalList(final N5Reader reader, final String path) {
+    private static List<String> readCategoricalList(final N5Reader reader, final String path) {
         final String[] categoryNames = readPrimitiveStringArray((N5HDF5Reader) reader, path + CATEGORIES_DIR);
         final Img<? extends IntegerType<?>> category = N5Utils.open(reader, path + CODES_DIR);
         final RandomAccess<? extends IntegerType<?>> ra = category.randomAccess();
@@ -176,13 +179,22 @@ class AnnDataUtils {
         }
     }
 
-    public static void writeFieldType(final N5Writer writer, final String path, final AnnDataFieldType type) {
+    public static void writeFieldType(final N5Writer writer, final AnnDataField field, final String path, final AnnDataFieldType type) {
+        if (!field.allows(type)) {
+            throw new AnnDataException("Field '" + field + "' does not allow type '" + type + "'.");
+        }
+        final String completePath = field.getPath(path);
+        writeFieldType(writer, completePath, type);
+    }
+
+    private static void writeFieldType(final N5Writer writer, final String path, final AnnDataFieldType type) {
         writer.setAttribute(path, ENCODING_KEY, type.getEncoding());
         writer.setAttribute(path, VERSION_KEY, type.getVersion());
     }
 
     public static <T extends NativeType<T> & RealType<T>> void writeArray(
             final N5Writer writer,
+            final AnnDataField field,
             final String path,
             final Img<T> data,
             final N5Options options) throws IOException {
@@ -195,21 +207,27 @@ class AnnDataUtils {
             type = AnnDataFieldType.CSC_MATRIX;
         }
 
-        writeArray(writer, path, data, options, type);
+        writeArray(writer, field, path, data, options, type);
     }
 
     public static <T extends NativeType<T> & RealType<T>> void writeArray(
             final N5Writer writer,
+            final AnnDataField field,
             final String path,
             final Img<T> data,
             final N5Options options,
             final AnnDataFieldType type) throws IOException {
 
+        if (!field.allows(type)) {
+            throw new AnnDataException("Field '" + field + "' does not allow type '" + type + "'.");
+        }
+
         try {
             if (type == AnnDataFieldType.DENSE_ARRAY) {
-                N5Utils.save(data, writer, path, options.blockSize, options.compression, options.exec);
+                final String completePath = field.getPath(path);
+                N5Utils.save(data, writer, completePath, options.blockSize, options.compression, options.exec);
             } else if (type == AnnDataFieldType.CSR_MATRIX || type == AnnDataFieldType.CSC_MATRIX) {
-                writeSparseArray(writer, path, data, options, type);
+                writeSparseArray(writer, field, path, data, options, type);
             } else {
                 throw new UnsupportedOperationException("Writing array data for " + type.toString() + " not supported.");
             }
@@ -222,6 +240,7 @@ class AnnDataUtils {
 
     public static <T extends NativeType<T> & RealType<T>> void writeSparseArray(
             final N5Writer writer,
+            final AnnDataField field,
             final String path,
             final Img<T> data,
             final N5Options options,
@@ -241,50 +260,54 @@ class AnnDataUtils {
             sparse = SparseArray.convertToSparse(data, leadingDim);
         }
 
-        writer.createGroup(path);
+        final String completePath = field.getPath(path);
+        writer.createGroup(completePath);
         final int[] blockSize = (options.blockSize.length == 1) ? options.blockSize : new int[]{options.blockSize[0]*options.blockSize[1]};
-        N5Utils.save(sparse.getDataArray(), writer, path + DATA_DIR, blockSize, options.compression, options.exec);
-        N5Utils.save(sparse.getIndicesArray(), writer, path + INDICES_DIR, blockSize, options.compression, options.exec);
-        N5Utils.save(sparse.getIndexPointerArray(), writer, path + INDPTR_DIR, blockSize, options.compression, options.exec);
+        N5Utils.save(sparse.getDataArray(), writer, completePath + DATA_DIR, blockSize, options.compression, options.exec);
+        N5Utils.save(sparse.getIndicesArray(), writer, completePath + INDICES_DIR, blockSize, options.compression, options.exec);
+        N5Utils.save(sparse.getIndexPointerArray(), writer, completePath + INDPTR_DIR, blockSize, options.compression, options.exec);
     }
 
-    public static void createDataFrame(final N5Writer writer, final String path, final List<String> index) {
-        writer.createGroup(path);
-        writeFieldType(writer, path, AnnDataFieldType.DATA_FRAME);
-        writer.setAttribute(path, INDEX_KEY, INDEX_KEY);
+    public static void createDataFrame(final N5Writer writer, final AnnDataField field, final String path, final List<String> index) {
+        final String completePath = field.getPath(path);
+        writer.createGroup(completePath);
+        writeFieldType(writer, completePath, AnnDataFieldType.DATA_FRAME);
+        writer.setAttribute(completePath, INDEX_KEY, INDEX_KEY);
         // this should be an empty attribute, which N5 doesn't support -> use "" as surrogate
-        writer.setAttribute(path, COLUMN_ORDER_KEY, "");
+        writer.setAttribute(completePath, COLUMN_ORDER_KEY, "");
 
-        writePrimitiveStringArray((N5HDF5Writer) writer, path + INDEX_DIR, index.toArray(new String[0]));
-        writeFieldType(writer, path + INDEX_DIR, AnnDataFieldType.STRING_ARRAY);
+        writePrimitiveStringArray((N5HDF5Writer) writer, completePath + INDEX_DIR, index.toArray(new String[0]));
+        writeFieldType(writer, completePath + INDEX_DIR, AnnDataFieldType.STRING_ARRAY);
     }
 
     public static <T extends NativeType<T> & RealType<T>> void addColumnToDataFrame(
             final N5Writer writer,
+            final AnnDataField field,
             final String dataFrame,
             final String columnName,
             final RandomAccessibleInterval<T> data,
             final N5Options options) throws IOException {
 
-        final List<String> existingData = getExistingDataFrameDatasets(writer, dataFrame);
+        final String completePath = field.getPath(dataFrame);
+        final List<String> existingData = getExistingDataFrameDatasets(writer, field, dataFrame);
         if (existingData.contains(columnName))
-            throw new IllegalArgumentException("Dataframe '" + dataFrame + "' already contains '" + columnName + "'.");
+            throw new IllegalArgumentException("Dataframe '" + completePath + "' already contains '" + columnName + "'.");
 
         try {
-            N5Utils.save(data, writer, dataFrame + SEPARATOR + columnName, options.blockSize, options.compression, options.exec);
+            N5Utils.save(data, writer, completePath + SEPARATOR + columnName, options.blockSize, options.compression, options.exec);
             existingData.add(columnName);
-            writer.setAttribute(dataFrame, COLUMN_ORDER_KEY, existingData.toArray());
+            writer.setAttribute(completePath, COLUMN_ORDER_KEY, existingData.toArray());
         } catch (final InterruptedException | ExecutionException e) {
-            throw new IOException("Could not write dataset '" + dataFrame + SEPARATOR + columnName + "'.", e);
+            throw new IOException("Could not write dataset '" + completePath + SEPARATOR + columnName + "'.", e);
         }
     }
 
-    protected static void writePrimitiveStringArray(final N5HDF5Writer writer, final String path, final String[] array) {
+    private static void writePrimitiveStringArray(final N5HDF5Writer writer, final String path, final String[] array) {
         final IHDF5StringWriter stringWriter = HDF5Factory.open(writer.getFilename()).string();
         stringWriter.writeArrayVL(path, array);
     }
 
-    protected static void createMapping(final N5Writer writer, final String path) {
+    private static void createMapping(final N5Writer writer, final String path) {
         writer.createGroup(path);
         writeFieldType(writer, path, AnnDataFieldType.MAPPING);
     }
@@ -292,7 +315,7 @@ class AnnDataUtils {
 
     // interface used to make reading sparse arrays more generic
     @FunctionalInterface
-    protected interface SparseArrayConstructor<
+    private interface SparseArrayConstructor<
             D extends NativeType<D> & RealType<D>,
             I extends NativeType<I> & IntegerType<I>> {
         SparseArray<D, I> apply(

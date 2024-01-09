@@ -46,7 +46,11 @@ public enum AnnDataField {
 		this.allowedTypes = allowedTypes;
 	}
 
-	public String getCompletePath(final String subPath) {
+	public String getPath() {
+		return getPath("");
+	}
+
+	public String getPath(final String subPath) {
 		if (!allowsSubPaths && !subPath.isEmpty())
 			throw new IllegalArgumentException("Sub-paths are not allowed for field " + basePath);
 		return Paths.get(basePath, subPath).toString();

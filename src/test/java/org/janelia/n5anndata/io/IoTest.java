@@ -140,52 +140,51 @@ public class IoTest {
 		final N5Reader reader = getReaderFor(pythonDataset);
 		final N5Writer writer = getWriterFor(javaDataset);
 
-		String path = "X";
 		final Img<DoubleType> X = AnnDataUtils.readNumericalArray(reader, AnnDataField.X, "");
-		N5Options options = getOptionsFor(reader, path);
-		AnnDataUtils.writeSparseArray(writer, path, X, options, AnnDataFieldType.CSR_MATRIX);
+		N5Options options = getOptionsFor(reader, AnnDataField.X.getPath(""));
+		AnnDataUtils.writeSparseArray(writer, AnnDataField.X, "", X, options, AnnDataFieldType.CSR_MATRIX);
 
-		path = "obsp/rnd";
+		String path = "rnd";
 		final Img<DoubleType> csr = AnnDataUtils.readNumericalArray(reader, AnnDataField.OBSP, "rnd");
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(writer, path, csr, options, AnnDataFieldType.CSR_MATRIX);
+		options = getOptionsFor(reader, AnnDataField.OBS.getPath(path));
+		AnnDataUtils.writeArray(writer, AnnDataField.OBS, path, csr, options, AnnDataFieldType.CSR_MATRIX);
 
-		path = "varp/rnd";
+		path = "rnd";
 		final Img<ShortType> csc = AnnDataUtils.readNumericalArray(reader, AnnDataField.VARP, "rnd");
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(writer, path, csc, options, AnnDataFieldType.CSC_MATRIX);
+		options = getOptionsFor(reader, AnnDataField.VAR.getPath(path));
+		AnnDataUtils.writeArray(writer, AnnDataField.VARP, path, csc, options, AnnDataFieldType.CSC_MATRIX);
 
 		// TODO: write methods for handling obs_names, var_names, and obs/cell_types
 
-		path = "var/gene_stuff1";
+		path = "gene_stuff1";
 		final Img<IntType> genes1 = AnnDataUtils.readNumericalArray(reader, AnnDataField.VAR, "gene_stuff1");
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(writer, path, genes1, options, AnnDataFieldType.DENSE_ARRAY);
+		options = getOptionsFor(reader, AnnDataField.VAR.getPath(path));
+		AnnDataUtils.writeArray(writer, AnnDataField.VAR, path, genes1, options, AnnDataFieldType.DENSE_ARRAY);
 
-		path = "var/gene_stuff2";
+		path = "gene_stuff2";
 		final Img<LongType> genes2 = AnnDataUtils.readNumericalArray(reader, AnnDataField.VAR, "gene_stuff2");
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(writer, path, genes2, options, AnnDataFieldType.DENSE_ARRAY);
+		options = getOptionsFor(reader, AnnDataField.VAR.getPath(path));
+		AnnDataUtils.writeArray(writer, AnnDataField.VAR, path, genes2, options, AnnDataFieldType.DENSE_ARRAY);
 
-		path = "obs/X_umap";
+		path = "X_umap";
 		final Img<DoubleType> umap1 = AnnDataUtils.readNumericalArray(reader, AnnDataField.OBS, "X_umap");
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(writer, path, umap1, options, AnnDataFieldType.DENSE_ARRAY);
+		options = getOptionsFor(reader, AnnDataField.OBS.getPath(path));
+		AnnDataUtils.writeArray(writer, AnnDataField.OBS, path, umap1, options, AnnDataFieldType.DENSE_ARRAY);
 
-		path = "varm/X_umap";
+		path = "X_umap";
 		final Img<DoubleType> umap2 = AnnDataUtils.readNumericalArray(reader, AnnDataField.VARM, "X_umap");
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(writer, path, umap2, options, AnnDataFieldType.DENSE_ARRAY);
+		options = getOptionsFor(reader, AnnDataField.VARM.getPath(path));
+		AnnDataUtils.writeArray(writer, AnnDataField.VARM, path, umap2, options, AnnDataFieldType.DENSE_ARRAY);
 
-		path = "uns/random";
+		path = "random";
 		final Img<DoubleType> uns = AnnDataUtils.readNumericalArray(reader, AnnDataField.UNS, "random");
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(writer, path, uns, options, AnnDataFieldType.DENSE_ARRAY);
+		options = getOptionsFor(reader, AnnDataField.UNS.getPath(path));
+		AnnDataUtils.writeArray(writer, AnnDataField.UNS, path, uns, options, AnnDataFieldType.DENSE_ARRAY);
 
-		path = "layers/log";
+		path = "log";
 		final Img<FloatType> log = AnnDataUtils.readNumericalArray(reader, AnnDataField.LAYERS, "log");
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(writer, path, log, options, AnnDataFieldType.CSR_MATRIX);
+		options = getOptionsFor(reader, AnnDataField.LAYERS.getPath(path));
+		AnnDataUtils.writeArray(writer, AnnDataField.LAYERS, path, log, options, AnnDataFieldType.CSR_MATRIX);
 	}
 
 	private static N5Reader getReaderFor(final String dataset) {

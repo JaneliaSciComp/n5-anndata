@@ -31,6 +31,26 @@ class AnnDataUtils {
     private static final String ROOT = "/";
     private static final String SEPARATOR = "/";
 
+    // encoding metadata
+    private static final String ENCODING_KEY = "encoding-type";
+    private static final String VERSION_KEY = "encoding-version";
+    private static final String SHAPE_KEY = "shape";
+
+    // dataframe metadata
+    private static final String INDEX_KEY = "_index";
+    private static final String COLUMN_ORDER_KEY = "column-order";
+    private static final String INDEX_DIR = "/_index";
+
+    // sparse metadata
+    private static final String DATA_DIR = "/data";
+    private static final String INDICES_DIR = "/indices";
+    private static final String INDPTR_DIR = "/indptr";
+
+    // categorical metadata
+    private static final String CATEGORIES_DIR = "/categories";
+    private static final String CODES_DIR = "/codes";
+
+
     public static void initializeAnnData(final N5Writer writer) {
         if (writer.list(ROOT).length > 0) {
             throw new AnnDataException("Cannot initialize AnnData: target container is not empty.");
@@ -58,8 +78,8 @@ class AnnDataUtils {
     }
 
     public static AnnDataFieldType getFieldType(final N5Reader reader, final String path) {
-        final String encoding = reader.getAttribute(path, "encoding-type", String.class);
-        final String version = reader.getAttribute(path, "encoding-version", String.class);
+        final String encoding = reader.getAttribute(path, ENCODING_KEY, String.class);
+        final String version = reader.getAttribute(path, VERSION_KEY, String.class);
         return AnnDataFieldType.fromString(encoding, version);
     }
 
@@ -69,11 +89,11 @@ class AnnDataUtils {
             final String path,
             final SparseArrayConstructor<T, I> constructor) {
 
-        final Img<T> sparseData = N5Utils.open(reader, path + "/data");
-        final Img<I> indices = N5Utils.open(reader, path + "/indices");
-        final Img<I> indptr = N5Utils.open(reader, path + "/indptr");
+        final Img<T> sparseData = N5Utils.open(reader, path + DATA_DIR);
+        final Img<I> indices = N5Utils.open(reader, path + INDICES_DIR);
+        final Img<I> indptr = N5Utils.open(reader, path + INDPTR_DIR);
 
-        final long[] shape = reader.getAttribute(path, "shape", long[].class);
+        final long[] shape = reader.getAttribute(path, SHAPE_KEY, long[].class);
         return constructor.apply(shape[1], shape[0], sparseData, indices, indptr);
     }
 
@@ -119,7 +139,7 @@ class AnnDataUtils {
             return new ArrayList<>();
         }
 
-        String[] rawArray = reader.getAttribute(dataFrame, "column-order", String[].class);
+        String[] rawArray = reader.getAttribute(dataFrame, COLUMN_ORDER_KEY, String[].class);
         rawArray = (rawArray == null) ? reader.list(dataFrame) : rawArray;
 
         if (rawArray == null || rawArray.length == 0) {
@@ -127,13 +147,13 @@ class AnnDataUtils {
         }
 
         final List<String> datasets = new ArrayList<>(Arrays.asList(rawArray));
-        datasets.remove("_index");
+        datasets.remove(INDEX_KEY);
         return datasets;
     }
 
     protected static List<String> readCategoricalList(final N5Reader reader, final String path) {
-        final String[] categoryNames = readPrimitiveStringArray((N5HDF5Reader) reader, path + "/categories");
-        final Img<? extends IntegerType<?>> category = N5Utils.open(reader, path + "/codes");
+        final String[] categoryNames = readPrimitiveStringArray((N5HDF5Reader) reader, path + CATEGORIES_DIR);
+        final Img<? extends IntegerType<?>> category = N5Utils.open(reader, path + CODES_DIR);
         final RandomAccess<? extends IntegerType<?>> ra = category.randomAccess();
 
         // assume that minimal index = 0
@@ -156,8 +176,8 @@ class AnnDataUtils {
     }
 
     public static void writeFieldType(final N5Writer writer, final String path, final AnnDataFieldType type) {
-        writer.setAttribute(path, "encoding-type", type.getEncoding());
-        writer.setAttribute(path, "encoding-version", type.getVersion());
+        writer.setAttribute(path, ENCODING_KEY, type.getEncoding());
+        writer.setAttribute(path, VERSION_KEY, type.getVersion());
     }
 
     public static <T extends NativeType<T> & RealType<T>> void writeArray(
@@ -192,7 +212,7 @@ class AnnDataUtils {
             } else {
                 throw new UnsupportedOperationException("Writing array data for " + type.toString() + " not supported.");
             }
-            writer.setAttribute(path, "shape", new long[]{data.dimension(1), data.dimension(0)});
+            writer.setAttribute(path, SHAPE_KEY, new long[]{data.dimension(1), data.dimension(0)});
             writeFieldType(writer, path, type);
         } catch (final ExecutionException | InterruptedException e) {
             throw new IOException("Could not load dataset at '" + path + "'.", e);
@@ -222,20 +242,20 @@ class AnnDataUtils {
 
         writer.createGroup(path);
         final int[] blockSize = (options.blockSize.length == 1) ? options.blockSize : new int[]{options.blockSize[0]*options.blockSize[1]};
-        N5Utils.save(sparse.getDataArray(), writer, path + "/data", blockSize, options.compression, options.exec);
-        N5Utils.save(sparse.getIndicesArray(), writer, path + "/indices", blockSize, options.compression, options.exec);
-        N5Utils.save(sparse.getIndexPointerArray(), writer, path + "/indptr", blockSize, options.compression, options.exec);
+        N5Utils.save(sparse.getDataArray(), writer, path + DATA_DIR, blockSize, options.compression, options.exec);
+        N5Utils.save(sparse.getIndicesArray(), writer, path + INDICES_DIR, blockSize, options.compression, options.exec);
+        N5Utils.save(sparse.getIndexPointerArray(), writer, path + INDPTR_DIR, blockSize, options.compression, options.exec);
     }
 
     public static void createDataFrame(final N5Writer writer, final String path, final List<String> index) {
         writer.createGroup(path);
         writeFieldType(writer, path, AnnDataFieldType.DATA_FRAME);
-        writer.setAttribute(path, "_index", "_index");
+        writer.setAttribute(path, INDEX_KEY, INDEX_KEY);
         // this should be an empty attribute, which N5 doesn't support -> use "" as surrogate
-        writer.setAttribute(path, "column-order", "");
+        writer.setAttribute(path, COLUMN_ORDER_KEY, "");
 
-        writePrimitiveStringArray((N5HDF5Writer) writer, path + "/_index", index.toArray(new String[0]));
-        writeFieldType(writer, path + "/_index", AnnDataFieldType.STRING_ARRAY);
+        writePrimitiveStringArray((N5HDF5Writer) writer, path + INDEX_DIR, index.toArray(new String[0]));
+        writeFieldType(writer, path + INDEX_DIR, AnnDataFieldType.STRING_ARRAY);
     }
 
     public static <T extends NativeType<T> & RealType<T>> void addColumnToDataFrame(
@@ -252,7 +272,7 @@ class AnnDataUtils {
         try {
             N5Utils.save(data, writer, dataFrame + SEPARATOR + columnName, options.blockSize, options.compression, options.exec);
             existingData.add(columnName);
-            writer.setAttribute(dataFrame, "column-order", existingData.toArray());
+            writer.setAttribute(dataFrame, COLUMN_ORDER_KEY, existingData.toArray());
         } catch (final InterruptedException | ExecutionException e) {
             throw new IOException("Could not write dataset '" + dataFrame + SEPARATOR + columnName + "'.", e);
         }

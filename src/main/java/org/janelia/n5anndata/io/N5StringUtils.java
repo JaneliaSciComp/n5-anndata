@@ -7,6 +7,8 @@ import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
+import org.janelia.saalfeldlab.n5.zarr.N5ZarrWriter;
+import org.janelia.saalfeldlab.n5.zarr.ZarrStringDataBlock;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,16 +50,19 @@ public class N5StringUtils {
 		final int chunkSize = blockSize[0];
 		final int nChunks = (int) Math.ceil((double) size / chunkSize);
 
+		final boolean isZarr = writer instanceof N5ZarrWriter;
 		final String[] chunkData = new String[chunkSize];
 		for (int i = 0; i < nChunks - 1; ++i) {
 			copy(data, i * chunkSize, (i + 1) * chunkSize, chunkData);
-			final DataBlock<?> chunk = new StringDataBlock(new int[] {chunkSize}, new long[] {i}, chunkData);
+			final DataBlock<?> chunk = isZarr ? new ZarrStringDataBlock(new int[] {chunkSize}, new long[] {i}, chunkData)
+					: new StringDataBlock(new int[] {chunkSize}, new long[] {i}, chunkData);
 			writer.writeBlock(path, attributes, chunk);
 		}
 		final int remainderSize = size - (nChunks - 1) * chunkSize;
 		final String[] remainder = new String[remainderSize];
 		copy(data, (nChunks - 1) * chunkSize, size, remainder);
-		final DataBlock<?> chunk = new StringDataBlock(new int[] {remainderSize}, new long[] {nChunks - 1}, remainder);
+		final DataBlock<?> chunk = isZarr ? new ZarrStringDataBlock(new int[] {chunkSize}, new long[] {nChunks - 1}, remainder)
+				: new StringDataBlock(new int[] {remainderSize}, new long[] {nChunks - 1}, remainder);
 		writer.writeBlock(path, attributes, chunk);
 	}
 

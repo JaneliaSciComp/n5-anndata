@@ -8,6 +8,7 @@ import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
 import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.N5FSWriter;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
@@ -52,6 +53,9 @@ public class IoTest {
 	private static Path testDirectoryPath;
 	private static ExecutorService executorService;
 
+	private static final List<String> OBS_NAMES = Arrays.asList("a", "b", "cd", "efg");
+	private static final List<String> VAR_NAMES = Arrays.asList("cell1", "cell2", "cell3");
+
 	@BeforeAll
 	public static void setup() throws IOException {
 		final Path currentDirectory = Paths.get("").toAbsolutePath();
@@ -83,8 +87,9 @@ public class IoTest {
 	@ParameterizedTest
 	@MethodSource("provideDatasetNames")
 	public void created_anndata_is_valid(final Supplier<N5Writer> writerSupplier) {
+		final N5Options options = new N5Options(new int[] {2}, new GzipCompression(), executorService);
 		try (final N5Writer writer = writerSupplier.get()) {
-			AnnDataUtils.initializeAnnData(writer);
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, options);
 			assertTrue(AnnDataUtils.isValidAnnData(writer));
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);

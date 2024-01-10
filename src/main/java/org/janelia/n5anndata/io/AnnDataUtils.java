@@ -50,18 +50,37 @@ class AnnDataUtils {
     private static final String CODES_DIR = "/codes";
 
 
-    public static void initializeAnnData(final N5Writer writer) {
+    public static void initializeAnnData(
+            final List<String> obsNames,
+            final N5Options obsOptions,
+            final List<String> varNames,
+            final N5Options varOptions,
+            final N5Writer writer) {
         if (writer.list(ROOT).length > 0) {
             throw new AnnDataException("Cannot initialize AnnData: target container is not empty.");
         }
         writer.createGroup(ROOT);
         writeFieldType(writer, ROOT, AnnDataFieldType.ANNDATA);
+        createDataFrame(obsNames, writer, AnnDataField.OBS, "", obsOptions);
+        createDataFrame(varNames, writer, AnnDataField.VAR, "", varOptions);
+    }
+
+    public static void initializeAnnData(
+            final List<String> obsNames,
+            final List<String> varNames,
+            final N5Writer writer,
+            final N5Options options) {
+        initializeAnnData(obsNames, options, varNames, options, writer);
     }
 
     // TODO: check metadata for all fields
-    public static boolean isValidAnnData(final N5Reader n5) {
+    public static boolean isValidAnnData(final N5Reader reader) {
         try {
-            return getFieldType(n5, ROOT).toString().equals(AnnDataFieldType.ANNDATA.toString());
+            return getFieldType(reader, ROOT).equals(AnnDataFieldType.ANNDATA)
+                    && reader.exists(AnnDataField.OBS.getPath())
+                    && isDataFrame(reader, AnnDataField.OBS.getPath())
+                    && reader.exists(AnnDataField.VAR.getPath())
+                    && isDataFrame(reader, AnnDataField.VAR.getPath());
         } catch (final Exception e) {
             return false;
         }
@@ -267,16 +286,16 @@ class AnnDataUtils {
         N5Utils.save(sparse.getIndexPointerArray(), writer, completePath + INDPTR_DIR, blockSize, options.compression, options.exec);
     }
 
-    public static void createDataFrame(final N5Writer writer, final AnnDataField field, final String path, final List<String> index) {
+    public static void createDataFrame(final List<String> index, final N5Writer writer, final AnnDataField field, final String path, final N5Options options) {
         final String completePath = field.getPath(path);
         writer.createGroup(completePath);
         writeFieldType(writer, completePath, AnnDataFieldType.DATA_FRAME);
         writer.setAttribute(completePath, INDEX_KEY, INDEX_KEY);
+        // TODO: does empty list/array work?
         // this should be an empty attribute, which N5 doesn't support -> use "" as surrogate
         writer.setAttribute(completePath, COLUMN_ORDER_KEY, "");
 
-        writePrimitiveStringArray((N5HDF5Writer) writer, completePath + INDEX_DIR, index.toArray(new String[0]));
-        writeFieldType(writer, completePath + INDEX_DIR, AnnDataFieldType.STRING_ARRAY);
+        writeStringArray(index, writer, field, INDEX_DIR, options, AnnDataFieldType.STRING_ARRAY);
     }
 
     public static void writeStringArray(final List<String> data, final N5Writer writer, final AnnDataField field, final String path, final N5Options options, final AnnDataFieldType type) {
@@ -309,7 +328,15 @@ class AnnDataUtils {
 
     private static boolean isDataFrame(final N5Reader reader, final String path) {
         final AnnDataFieldType type = getFieldType(reader, path);
-        return type == AnnDataFieldType.DATA_FRAME;
+        final String indexDir;
+        try {
+           indexDir = reader.getAttribute(path, INDEX_KEY, String.class);
+        } catch (final Exception e) {
+            return false;
+        }
+        return type == AnnDataFieldType.DATA_FRAME
+                && reader.exists(path + SEPARATOR + indexDir)
+                && (reader.getAttribute(path, COLUMN_ORDER_KEY, String[].class) != null);
     }
 
 

@@ -19,6 +19,10 @@ public class AnnDataPath {
 		this(AnnDataField.fromString(field), subPaths);
 	}
 
+	public AnnDataField getField() {
+		return field;
+	}
+
 	public String toString() {
 		if (subPaths.length == 0) {
 			return ROOT + field.toString();

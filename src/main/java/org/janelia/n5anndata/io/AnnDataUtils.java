@@ -46,6 +46,12 @@ class AnnDataUtils {
     private static final String CATEGORIES_DIR = "categories";
     private static final String CODES_DIR = "codes";
 
+    private static Checker checker = Checker.STRICT;
+
+
+    public static void setChecker(final Checker checker) {
+        AnnDataUtils.checker = checker;
+    }
 
     public static void initializeAnnData(
             final List<String> obsNames,
@@ -81,6 +87,19 @@ class AnnDataUtils {
         } catch (final Exception e) {
             return false;
         }
+    }
+
+    public static long getNObs(final N5Reader reader) {
+        return getDataFrameIndexSize(reader, AnnDataField.OBS.getPath());
+    }
+
+    public static long getNVar(final N5Reader reader) {
+        return getDataFrameIndexSize(reader, AnnDataField.VAR.getPath());
+    }
+
+    public static long getDataFrameIndexSize(final N5Reader reader, final String path) {
+        final AnnDataPath indexPath = getDataFrameIndexPath(reader, path);
+        return reader.getAttribute(indexPath.toString(), SHAPE_KEY, long[].class)[0];
     }
 
     public static AnnDataFieldType getFieldType(final N5Reader reader, final String path) {
@@ -332,16 +351,21 @@ class AnnDataUtils {
 
     private static boolean isDataFrame(final N5Reader reader, final String path) {
         final AnnDataFieldType type = getFieldType(reader, path);
+        final AnnDataPath indexPath = getDataFrameIndexPath(reader, path);
+        if (indexPath == null) return false;
+        return type == AnnDataFieldType.DATA_FRAME
+                && reader.exists(indexPath.toString())
+                && (reader.getAttribute(path, COLUMN_ORDER_KEY, String[].class) != null);
+    }
+
+    private static AnnDataPath getDataFrameIndexPath(final N5Reader reader, final String path) {
         final String indexDir;
         try {
            indexDir = reader.getAttribute(path, INDEX_KEY, String.class);
         } catch (final Exception e) {
-            return false;
+            return null;
         }
-        final AnnDataPath indexPath = AnnDataPath.fromString(path).append(indexDir);
-        return type == AnnDataFieldType.DATA_FRAME
-                && reader.exists(indexPath.toString())
-                && (reader.getAttribute(path, COLUMN_ORDER_KEY, String[].class) != null);
+		return AnnDataPath.fromString(path).append(indexDir);
     }
 
 

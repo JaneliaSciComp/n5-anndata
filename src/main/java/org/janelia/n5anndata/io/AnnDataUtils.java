@@ -64,8 +64,15 @@ class AnnDataUtils {
         }
         writer.createGroup(AnnDataPath.ROOT);
         writeFieldType(writer, AnnDataPath.ROOT, AnnDataFieldType.ANNDATA);
+
         createDataFrame(obsNames, writer, AnnDataField.OBS, "", obsOptions);
         createDataFrame(varNames, writer, AnnDataField.VAR, "", varOptions);
+        createMapping(writer, AnnDataField.LAYERS.getPath());
+        createMapping(writer, AnnDataField.OBSM.getPath());
+        createMapping(writer, AnnDataField.OBSP.getPath());
+        createMapping(writer, AnnDataField.VARM.getPath());
+        createMapping(writer, AnnDataField.VARP.getPath());
+        createMapping(writer, AnnDataField.UNS.getPath());
     }
 
     public static void initializeAnnData(
@@ -80,10 +87,14 @@ class AnnDataUtils {
     public static boolean isValidAnnData(final N5Reader reader) {
         try {
             return getFieldType(reader, AnnDataPath.ROOT).equals(AnnDataFieldType.ANNDATA)
-                    && reader.exists(AnnDataField.OBS.getPath())
-                    && isDataFrame(reader, AnnDataField.OBS.getPath())
-                    && reader.exists(AnnDataField.VAR.getPath())
-                    && isDataFrame(reader, AnnDataField.VAR.getPath());
+                    && reader.exists(AnnDataField.OBS.getPath()) && isDataFrame(reader, AnnDataField.OBS.getPath())
+                    && reader.exists(AnnDataField.VAR.getPath()) && isDataFrame(reader, AnnDataField.VAR.getPath())
+                    && reader.exists(AnnDataField.LAYERS.getPath()) && getFieldType(reader, AnnDataField.LAYERS.getPath()).equals(AnnDataFieldType.MAPPING)
+                    && reader.exists(AnnDataField.OBSM.getPath()) && getFieldType(reader, AnnDataField.OBSM.getPath()).equals(AnnDataFieldType.MAPPING)
+                    && reader.exists(AnnDataField.OBSP.getPath()) && getFieldType(reader, AnnDataField.OBSP.getPath()).equals(AnnDataFieldType.MAPPING)
+                    && reader.exists(AnnDataField.VARM.getPath()) && getFieldType(reader, AnnDataField.VARM.getPath()).equals(AnnDataFieldType.MAPPING)
+                    && reader.exists(AnnDataField.VARP.getPath()) && getFieldType(reader, AnnDataField.VARP.getPath()).equals(AnnDataFieldType.MAPPING)
+                    && reader.exists(AnnDataField.UNS.getPath()) && getFieldType(reader, AnnDataField.UNS.getPath()).equals(AnnDataFieldType.MAPPING);
         } catch (final Exception e) {
             return false;
         }
@@ -202,9 +213,6 @@ class AnnDataUtils {
     }
 
     private static void writeFieldType(final N5Writer writer, final AnnDataField field, final String path, final AnnDataFieldType type) {
-        if (! field.canHaveAsChild(type)) {
-            throw new IllegalArgumentException("Field " + field + " cannot have child of type " + type);
-        }
         final String completePath = field.getPath(path);
         writeFieldType(writer, completePath, type);
     }
@@ -240,12 +248,11 @@ class AnnDataUtils {
             final N5Options options,
             final AnnDataFieldType type) throws IOException {
 
-        if (! field.canHaveAsChild(type)) {
-            throw new IllegalArgumentException("Field " + field + " cannot have child of type " + type);
-        }
         AnnDataFieldType.checkIfNumericalArray(type);
-
+        final long[] shape = flip(data.dimensionsAsLongArray());
         final String completePath = field.getPath(path);
+        checker.check(writer, completePath, type, shape);
+
         if (writer.exists(completePath))
             throw new IllegalArgumentException("Dataset '" + completePath + "' already exists.");
 
@@ -255,12 +262,21 @@ class AnnDataUtils {
             } else if (type == AnnDataFieldType.CSR_MATRIX || type == AnnDataFieldType.CSC_MATRIX) {
                 writeSparseArray(writer, field, path, data, options, type);
             }
-            writer.setAttribute(path, SHAPE_KEY, new long[]{data.dimension(1), data.dimension(0)});
+            writer.setAttribute(path, SHAPE_KEY, shape);
             writeFieldType(writer, path, type);
             conditionallyAddToDataFrame(writer, completePath);
         } catch (final ExecutionException | InterruptedException e) {
             throw new IOException("Could not write dataset at '" + path + "'.", e);
         }
+    }
+
+    private static long[] flip(final long[] array) {
+        if (array.length == 1) {
+            return array;
+        } else if (array.length == 2) {
+            return new long[]{array[1], array[0]};
+        }
+        throw new IllegalArgumentException("Array must have length 1 or 2.");
     }
 
     private static void conditionallyAddToDataFrame(final N5Writer writer, final String completePath) {
@@ -308,6 +324,8 @@ class AnnDataUtils {
 
     public static void createDataFrame(final List<String> index, final N5Writer writer, final AnnDataField field, final String path, final N5Options options) {
         final String completePath = field.getPath(path);
+        checker.check(writer, completePath, AnnDataFieldType.DATA_FRAME, new long[]{index.size(), 1});
+
         writer.createGroup(completePath);
         writeFieldType(writer, completePath, AnnDataFieldType.DATA_FRAME);
         writer.setAttribute(completePath, INDEX_KEY, INDEX_KEY);
@@ -320,12 +338,10 @@ class AnnDataUtils {
     }
 
     public static void writeStringArray(final List<String> data, final N5Writer writer, final AnnDataField field, final String path, final N5Options options, final AnnDataFieldType type) {
-        if (! field.canHaveAsChild(type)) {
-            throw new IllegalArgumentException("Field " + field + " cannot have child of type " + type);
-        }
-        AnnDataFieldType.checkIfStringArray(type);
-        
         final String completePath = field.getPath(path);
+        checker.check(writer, completePath, type, new long[]{data.size(), 1});
+        AnnDataFieldType.checkIfStringArray(type);
+
         switch (type) {
             case STRING_ARRAY:
                 if (writer instanceof N5HDF5Writer) {

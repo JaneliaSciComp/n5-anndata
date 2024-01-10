@@ -2,6 +2,8 @@ package org.janelia.n5anndata.io;
 
 import org.janelia.saalfeldlab.n5.N5Reader;
 
+import java.util.Arrays;
+
 import static org.janelia.n5anndata.io.AnnDataFieldType.*;
 
 public class Checker {
@@ -20,23 +22,42 @@ public class Checker {
 		this.dimensionChecker = dimensionChecker;
 	}
 
-	public boolean check(final N5Reader reader, final String path, final AnnDataFieldType type, final long[] shape) {
-		return check(reader, AnnDataPath.fromString(path), type, shape);
+	public void check(final N5Reader reader, final String path, final AnnDataFieldType type, final long[] shape) {
+		check(reader, AnnDataPath.fromString(path), type, shape);
 	}
 
-	public boolean check(final N5Reader reader, final AnnDataPath path, final AnnDataFieldType type, final long[] shape) {
+	public void check(final N5Reader reader, final AnnDataPath path, final AnnDataFieldType type, final long[] shape) {
 		final String parentPath = path.getParentPath();
 		final AnnDataFieldType parentType = AnnDataUtils.getFieldType(reader, parentPath);
 		final long nObs = AnnDataUtils.getNObs(reader);
 		final long nVar = AnnDataUtils.getNVar(reader);
+		final long[] shape2D = ensure2D(shape);
 
-		boolean isValid = typeChecker.check(path.getField(), type, parentType);
-		isValid = isValid && dimensionChecker.checkFieldConstraints(path.getField(), shape, nObs, nVar);
+		if (! typeChecker.check(path.getField(), type, parentType)) {
+			final String msg = String.format("Cannot put '%s' at '%s' because it is not allowed by '%s' or the parent type ('%s')",
+											 type, path, path.getField(), parentType);
+			throw new AnnDataException(msg);
+		}
+		if (! dimensionChecker.checkFieldConstraints(path.getField(), shape2D, nObs, nVar)) {
+			final String msg = String.format("Dimensions %s not compatible with nObs=%d and nVar=%d because of the constraints enforced by '%s'",
+											 Arrays.toString(shape2D), nObs, nVar, path.getField());
+			throw new AnnDataException(msg);
+		}
 		if (parentType == DATA_FRAME) {
 			final long indexSize = AnnDataUtils.getDataFrameIndexSize(reader, parentPath);
-			isValid = isValid && dimensionChecker.checkDataFrameConstraints(shape, indexSize);
+			if (! dimensionChecker.checkDataFrameConstraints(shape2D, indexSize)) {
+				final String msg = String.format("Dimensions %s not compatible with data frame constraints of '%s' (index size=%d)",
+												 Arrays.toString(shape2D), parentPath, indexSize);
+				throw new AnnDataException(msg);
+			}
 		}
-		return isValid;
+	}
+
+	private static long[] ensure2D(final long[] shape) {
+		if (shape.length == 1)
+			return new long[] {shape[0], 1};
+		else
+			return shape;
 	}
 
 

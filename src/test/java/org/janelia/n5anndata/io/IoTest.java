@@ -43,6 +43,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Named.named;
@@ -81,6 +83,19 @@ public class IoTest {
 				final Path fileOrDir = Paths.get(testDirectoryPath.toString(), fileOrDirPath);
 				deleteRecursively(fileOrDir);
 			}
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("provideDatasetNames")
+	public void reading_and_writing_strings_from_list(final Supplier<N5Writer> writerSupplier) {
+		final List<String> expected = Arrays.asList("", "a", "b", "cd", "efg", ":-þ");
+		try (final N5Writer writer = writerSupplier.get()) {
+			N5StringUtils.save(expected, writer, "test", new int[] {4});
+			final List<String> actual = N5StringUtils.open(writer, "/test");
+			assertArrayEquals(expected.toArray(), actual.toArray());
+		} catch (final Exception e) {
+			fail("Could not write / read file: ", e);
 		}
 	}
 

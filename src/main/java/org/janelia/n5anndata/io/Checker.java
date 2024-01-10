@@ -8,7 +8,7 @@ import static org.janelia.n5anndata.io.AnnDataFieldType.*;
 
 public class Checker {
 
-	public static final Checker NONE = new Checker(new NoTypeChecker(), new NoDimensionChecker());
+	public static final Checker NONE = new NoChecker();
 	public static final Checker ONLY_TYPE = new Checker(new StrictTypeChecker(), new NoDimensionChecker());
 	public static final Checker ONLY_DIMENSION = new Checker(new NoTypeChecker(), new StrictDimensionChecker());
 	public static final Checker STRICT = new Checker(new StrictTypeChecker(), new StrictDimensionChecker());
@@ -58,6 +58,19 @@ public class Checker {
 			return new long[] {shape[0], 1};
 		else
 			return shape;
+	}
+
+
+	private static class NoChecker extends Checker {
+		private NoChecker() {
+			super(null, null);
+		}
+
+		@Override
+		public void check(final N5Reader reader, final String path, final AnnDataFieldType type, final long[] shape) {}
+
+		@Override
+		public void check(final N5Reader reader, final AnnDataPath path, final AnnDataFieldType type, final long[] shape) {}
 	}
 
 

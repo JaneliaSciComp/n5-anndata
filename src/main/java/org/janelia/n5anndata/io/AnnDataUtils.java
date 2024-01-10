@@ -59,9 +59,14 @@ class AnnDataUtils {
             final List<String> varNames,
             final N5Options varOptions,
             final N5Writer writer) {
+        // temporarily disable checker to avoid cyclical dependencies
+        final Checker oldChecker = checker;
+        setChecker(Checker.NONE);
+
         if (writer.list(AnnDataPath.ROOT).length > 0) {
             throw new AnnDataException("Cannot initialize AnnData: target container is not empty.");
         }
+
         writer.createGroup(AnnDataPath.ROOT);
         writeFieldType(writer, AnnDataPath.ROOT, AnnDataFieldType.ANNDATA);
 
@@ -73,6 +78,8 @@ class AnnDataUtils {
         createMapping(writer, AnnDataField.VARM.getPath());
         createMapping(writer, AnnDataField.VARP.getPath());
         createMapping(writer, AnnDataField.UNS.getPath());
+
+        setChecker(oldChecker);
     }
 
     public static void initializeAnnData(

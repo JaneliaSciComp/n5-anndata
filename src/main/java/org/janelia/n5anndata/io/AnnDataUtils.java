@@ -27,9 +27,6 @@ import java.util.concurrent.ExecutionException;
 
 class AnnDataUtils {
 
-    private static final String ROOT = "/";
-    private static final String SEPARATOR = "/";
-
     // encoding metadata
     private static final String ENCODING_KEY = "encoding-type";
     private static final String VERSION_KEY = "encoding-version";
@@ -38,16 +35,16 @@ class AnnDataUtils {
     // dataframe metadata
     private static final String INDEX_KEY = "_index";
     private static final String COLUMN_ORDER_KEY = "column-order";
-    private static final String INDEX_DIR = "/_index";
+    private static final String DEFAULT_INDEX_DIR = "_index";
 
     // sparse metadata
-    private static final String DATA_DIR = "/data";
-    private static final String INDICES_DIR = "/indices";
-    private static final String INDPTR_DIR = "/indptr";
+    private static final String DATA_DIR = "data";
+    private static final String INDICES_DIR = "indices";
+    private static final String INDPTR_DIR = "indptr";
 
     // categorical metadata
-    private static final String CATEGORIES_DIR = "/categories";
-    private static final String CODES_DIR = "/codes";
+    private static final String CATEGORIES_DIR = "categories";
+    private static final String CODES_DIR = "codes";
 
 
     public static void initializeAnnData(
@@ -56,11 +53,11 @@ class AnnDataUtils {
             final List<String> varNames,
             final N5Options varOptions,
             final N5Writer writer) {
-        if (writer.list(ROOT).length > 0) {
+        if (writer.list(AnnDataPath.ROOT).length > 0) {
             throw new AnnDataException("Cannot initialize AnnData: target container is not empty.");
         }
-        writer.createGroup(ROOT);
-        writeFieldType(writer, ROOT, AnnDataFieldType.ANNDATA);
+        writer.createGroup(AnnDataPath.ROOT);
+        writeFieldType(writer, AnnDataPath.ROOT, AnnDataFieldType.ANNDATA);
         createDataFrame(obsNames, writer, AnnDataField.OBS, "", obsOptions);
         createDataFrame(varNames, writer, AnnDataField.VAR, "", varOptions);
     }
@@ -76,7 +73,7 @@ class AnnDataUtils {
     // TODO: check metadata for all fields
     public static boolean isValidAnnData(final N5Reader reader) {
         try {
-            return getFieldType(reader, ROOT).equals(AnnDataFieldType.ANNDATA)
+            return getFieldType(reader, AnnDataPath.ROOT).equals(AnnDataFieldType.ANNDATA)
                     && reader.exists(AnnDataField.OBS.getPath())
                     && isDataFrame(reader, AnnDataField.OBS.getPath())
                     && reader.exists(AnnDataField.VAR.getPath())
@@ -186,7 +183,9 @@ class AnnDataUtils {
     }
 
     private static void writeFieldType(final N5Writer writer, final AnnDataField field, final String path, final AnnDataFieldType type) {
-        field.checkIfAllows(type);
+        if (! field.canHaveAsChild(type)) {
+            throw new IllegalArgumentException("Field " + field + " cannot have child of type " + type);
+        }
         final String completePath = field.getPath(path);
         writeFieldType(writer, completePath, type);
     }
@@ -222,7 +221,9 @@ class AnnDataUtils {
             final N5Options options,
             final AnnDataFieldType type) throws IOException {
 
-        field.checkIfAllows(type);
+        if (! field.canHaveAsChild(type)) {
+            throw new IllegalArgumentException("Field " + field + " cannot have child of type " + type);
+        }
         AnnDataFieldType.checkIfNumericalArray(type);
 
         final String completePath = field.getPath(path);
@@ -244,13 +245,13 @@ class AnnDataUtils {
     }
 
     private static void conditionallyAddToDataFrame(final N5Writer writer, final String completePath) {
-        final int lastSeparator = completePath.lastIndexOf(SEPARATOR);
-        final String parent = completePath.substring(0, lastSeparator);
+        final AnnDataPath path = AnnDataPath.fromString(completePath);
+        final String parent = path.getParentPath();
 
         if (parent.isEmpty() || !isDataFrame(writer, parent))
             return;
 
-        final String columnName = completePath.substring(lastSeparator + 1);
+        final String columnName = path.getLeaf();
         final Set<String> existingData = getExistingDataFrameDatasets(writer, parent);
         existingData.add(columnName);
         writer.setAttribute(completePath, COLUMN_ORDER_KEY, existingData.toArray());
@@ -294,12 +295,15 @@ class AnnDataUtils {
         // TODO: does empty list/array work?
         // this should be an empty attribute, which N5 doesn't support -> use "" as surrogate
         writer.setAttribute(completePath, COLUMN_ORDER_KEY, "");
+        writer.setAttribute(completePath, INDEX_KEY, DEFAULT_INDEX_DIR);
 
-        writeStringArray(index, writer, field, INDEX_DIR, options, AnnDataFieldType.STRING_ARRAY);
+        writeStringArray(index, writer, field, DEFAULT_INDEX_DIR, options, AnnDataFieldType.STRING_ARRAY);
     }
 
     public static void writeStringArray(final List<String> data, final N5Writer writer, final AnnDataField field, final String path, final N5Options options, final AnnDataFieldType type) {
-        field.checkIfAllows(type);
+        if (! field.canHaveAsChild(type)) {
+            throw new IllegalArgumentException("Field " + field + " cannot have child of type " + type);
+        }
         AnnDataFieldType.checkIfStringArray(type);
         
         final String completePath = field.getPath(path);
@@ -334,8 +338,9 @@ class AnnDataUtils {
         } catch (final Exception e) {
             return false;
         }
+        final AnnDataPath indexPath = AnnDataPath.fromString(path).append(indexDir);
         return type == AnnDataFieldType.DATA_FRAME
-                && reader.exists(path + SEPARATOR + indexDir)
+                && reader.exists(indexPath.toString())
                 && (reader.getAttribute(path, COLUMN_ORDER_KEY, String[].class) != null);
     }
 

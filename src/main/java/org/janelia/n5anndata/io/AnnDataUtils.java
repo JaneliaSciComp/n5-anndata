@@ -288,7 +288,7 @@ class AnnDataUtils {
         final AnnDataPath path = AnnDataPath.fromString(completePath);
         final String parent = path.getParentPath();
 
-        if (parent.isEmpty() || !isDataFrame(writer, parent))
+        if (parent.isEmpty() || parent == AnnDataPath.ROOT || !isDataFrame(writer, parent))
             return;
 
         final String columnName = path.getLeaf();
@@ -333,10 +333,9 @@ class AnnDataUtils {
 
         writer.createGroup(completePath);
         writeFieldType(writer, completePath, AnnDataFieldType.DATA_FRAME);
-        writer.setAttribute(completePath, INDEX_KEY, INDEX_KEY);
-        // TODO: does empty list/array work?
-        // this should be an empty attribute, which N5 doesn't support -> use "" as surrogate
-        writer.setAttribute(completePath, COLUMN_ORDER_KEY, "");
+
+        final boolean isHDF5 = (writer instanceof N5HDF5Reader);
+        writer.setAttribute(completePath, COLUMN_ORDER_KEY, isHDF5 ? "" : new String[0]);
         writer.setAttribute(completePath, INDEX_KEY, DEFAULT_INDEX_DIR);
 
         writeStringArray(index, writer, field, DEFAULT_INDEX_DIR, options, AnnDataFieldType.STRING_ARRAY);
@@ -380,9 +379,7 @@ class AnnDataUtils {
         final AnnDataFieldType type = getFieldType(reader, path);
         final AnnDataPath indexPath = getDataFrameIndexPath(reader, path);
         if (indexPath == null) return false;
-        return type == AnnDataFieldType.DATA_FRAME
-                && reader.exists(indexPath.toString())
-                && (reader.getAttribute(path, COLUMN_ORDER_KEY, String[].class) != null);
+        return type == AnnDataFieldType.DATA_FRAME && reader.exists(indexPath.toString());
     }
 
     private static AnnDataPath getDataFrameIndexPath(final N5Reader reader, final String path) {

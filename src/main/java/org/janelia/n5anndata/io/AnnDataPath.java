@@ -27,7 +27,7 @@ public class AnnDataPath {
 		if (subPaths.length == 0) {
 			return ROOT + field.toString();
 		} else {
-			return ROOT + field.toString() + SEPARATOR + field.getPath(String.join(SEPARATOR, subPaths));
+			return ROOT + field.getPath(String.join(SEPARATOR, subPaths));
 		}
 	}
 

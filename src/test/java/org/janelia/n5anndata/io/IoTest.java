@@ -55,9 +55,10 @@ import static org.junit.jupiter.api.Named.named;
 public class IoTest {
 
 	private static Path testDirectoryPath;
-	private static ExecutorService executorService = Executors.newFixedThreadPool(4);
-	public static final N5Options ARRAY_OPTIONS = new N5Options(new int[]{2}, new GzipCompression(), executorService);
-	public static final N5Options MATRIX_OPTIONS = new N5Options(new int[]{2, 2}, new GzipCompression(), executorService);
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(4);
+	private static final Compression COMPRESSION = new GzipCompression();
+	public static final N5Options ARRAY_OPTIONS = new N5Options(new int[]{2}, COMPRESSION, EXECUTOR);
+	public static final N5Options MATRIX_OPTIONS = new N5Options(new int[]{2, 2}, new GzipCompression(), EXECUTOR);
 
 	private static final List<String> OBS_NAMES = Arrays.asList("a", "b", "cd", "efg");
 	private static final List<String> VAR_NAMES = Arrays.asList("cell1", "cell2", "cell3");
@@ -67,7 +68,6 @@ public class IoTest {
 	public static void setup() throws IOException {
 		final Path currentDirectory = Paths.get("").toAbsolutePath();
 		testDirectoryPath = Files.createTempDirectory(currentDirectory, "tmp_test_dir");
-		executorService = Executors.newSingleThreadExecutor();
 	}
 
 	@AfterAll
@@ -76,7 +76,7 @@ public class IoTest {
 		if (dir.exists()) {
 			deleteRecursively(testDirectoryPath);
 		}
-		executorService.shutdown();
+		EXECUTOR.shutdown();
 	}
 
 	@AfterEach
@@ -262,7 +262,7 @@ public class IoTest {
 		final DatasetAttributes attributes = reader.getDatasetAttributes(path);
 		final int[] blockSize = attributes.getBlockSize();
 		final Compression compression = attributes.getCompression();
-		return new N5Options(blockSize, compression, executorService);
+		return new N5Options(blockSize, compression, EXECUTOR);
 	}
 
 	private static <T> void assertEquals(final Img<T> expected, final Img<T> actual) {

@@ -174,7 +174,7 @@ class AnnDataUtils {
             case CATEGORICAL_ARRAY:
                 return readCategoricalList(reader, completePath);
             default:
-                throw new UnsupportedOperationException("Reading string annotations for " + type + " not supported.");
+                throw new AnnDataException("Reading string array for '" + type + "' not supported.");
         }
     }
 
@@ -269,11 +269,10 @@ class AnnDataUtils {
             } else if (type == AnnDataFieldType.CSR_MATRIX || type == AnnDataFieldType.CSC_MATRIX) {
                 writeSparseArray(writer, field, path, data, options, type);
             }
-            writer.setAttribute(path, SHAPE_KEY, shape);
-            writeFieldType(writer, path, type);
+            writeFieldType(writer, completePath, type);
             conditionallyAddToDataFrame(writer, completePath);
         } catch (final ExecutionException | InterruptedException e) {
-            throw new IOException("Could not write dataset at '" + path + "'.", e);
+            throw new IOException("Could not write dataset at '" + completePath + "'.", e);
         }
     }
 
@@ -290,7 +289,7 @@ class AnnDataUtils {
         final AnnDataPath path = AnnDataPath.fromString(completePath);
         final String parent = path.getParentPath();
 
-        if (parent.isEmpty() || parent == AnnDataPath.ROOT || !isDataFrame(writer, parent))
+        if (parent.isEmpty() || parent.equals(AnnDataPath.ROOT) || !isDataFrame(writer, parent))
             return;
 
         final String columnName = path.getLeaf();
@@ -310,13 +309,12 @@ class AnnDataUtils {
         if (type != AnnDataFieldType.CSR_MATRIX && type != AnnDataFieldType.CSC_MATRIX)
             throw new IllegalArgumentException("Sparse array type must be CSR or CSC.");
 
-        final SparseArray<T, ?> sparse;
         final boolean typeFitsData = (type == AnnDataFieldType.CSR_MATRIX && data instanceof CsrArray)
                 || (type == AnnDataFieldType.CSC_MATRIX && data instanceof CscArray);
+        final SparseArray<T, ?> sparse;
         if (typeFitsData) {
            sparse = (SparseArray<T, ?>) data;
-        }
-        else {
+        } else {
             final int leadingDim = (type == AnnDataFieldType.CSR_MATRIX) ? 0 : 1;
             sparse = SparseArray.convertToSparse(data, leadingDim);
         }
@@ -327,6 +325,9 @@ class AnnDataUtils {
         N5Utils.save(sparse.getDataArray(), writer, completePath + DATA_DIR, blockSize, options.compression, options.exec);
         N5Utils.save(sparse.getIndicesArray(), writer, completePath + INDICES_DIR, blockSize, options.compression, options.exec);
         N5Utils.save(sparse.getIndexPointerArray(), writer, completePath + INDPTR_DIR, blockSize, options.compression, options.exec);
+
+        final long[] shape = flip(data.dimensionsAsLongArray());
+        writer.setAttribute(completePath, SHAPE_KEY, shape);
     }
 
     public static void createDataFrame(final List<String> index, final N5Writer writer, final AnnDataField field, final String path, final N5Options options) {

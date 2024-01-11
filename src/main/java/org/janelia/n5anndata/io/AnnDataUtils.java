@@ -2,27 +2,30 @@ package org.janelia.n5anndata.io;
 
 import ch.systemsx.cisd.hdf5.HDF5Factory;
 import ch.systemsx.cisd.hdf5.IHDF5Reader;
-import ch.systemsx.cisd.hdf5.IHDF5StringWriter;
-import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.NativeType;
-import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.IntegerType;
+import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.IntType;
 import org.janelia.n5anndata.datastructures.CscArray;
 import org.janelia.n5anndata.datastructures.CsrArray;
 import org.janelia.n5anndata.datastructures.SparseArray;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.hdf5.N5HDF5Reader;
-import org.janelia.saalfeldlab.n5.hdf5.N5HDF5Writer;
 import org.janelia.saalfeldlab.n5.imglib2.N5Utils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 class AnnDataUtils {
@@ -43,6 +46,7 @@ class AnnDataUtils {
     private static final String INDPTR_DIR = "indptr";
 
     // categorical metadata
+    private static final String ORDERED_KEY = "ordered";
     private static final String CATEGORIES_DIR = "categories";
     private static final String CODES_DIR = "codes";
 
@@ -164,17 +168,12 @@ class AnnDataUtils {
         final AnnDataFieldType type = getFieldType(reader, path);
         switch (type) {
             case STRING_ARRAY:
-                return readStringList(reader, completePath);
+                return N5StringUtils.open(reader, completePath);
             case CATEGORICAL_ARRAY:
                 return readCategoricalList(reader, completePath);
             default:
                 throw new UnsupportedOperationException("Reading string annotations for " + type + " not supported.");
         }
-    }
-
-    private static List<String> readStringList(final N5Reader reader, final String path) {
-        final String[] array = readPrimitiveStringArray((N5HDF5Reader) reader, path);
-        return Arrays.asList(array);
     }
 
     private static String[] readPrimitiveStringArray(final N5HDF5Reader reader, final String path) {
@@ -205,18 +204,17 @@ class AnnDataUtils {
     }
 
     private static List<String> readCategoricalList(final N5Reader reader, final String path) {
-        final String[] categoryNames = readPrimitiveStringArray((N5HDF5Reader) reader, path + CATEGORIES_DIR);
-        final Img<? extends IntegerType<?>> category = N5Utils.open(reader, path + CODES_DIR);
-        final RandomAccess<? extends IntegerType<?>> ra = category.randomAccess();
+        final AnnDataPath basePath = AnnDataPath.fromString(path);
+        final List<String> categoryNames = N5StringUtils.open(reader, basePath.append(CATEGORIES_DIR).toString());
+        final Img<? extends IntegerType<?>> categories = N5Utils.open(reader, basePath.append(CODES_DIR).toString());
 
-        // assume that minimal index = 0
-        final int max = (int) category.max(0);
-        final String[] names = new String[max];
-        for (int i = 0; i < max; ++i) {
-            names[i] = categoryNames[ra.setPositionAndGet(i).getInteger()];
+        final int nElements = (int) categories.size();
+        final List<String> denormalizedNames = new ArrayList<>(nElements);
+
+        for (final IntegerType<?> category : categories) {
+            denormalizedNames.add(categoryNames.get(category.getInteger()));
         }
-
-        return Arrays.asList(names);
+        return denormalizedNames;
     }
 
     private static void writeFieldType(final N5Writer writer, final AnnDataField field, final String path, final AnnDataFieldType type) {
@@ -351,20 +349,26 @@ class AnnDataUtils {
 
         switch (type) {
             case STRING_ARRAY:
-                if (writer instanceof N5HDF5Writer) {
-                    writePrimitiveStringArray((N5HDF5Writer) writer, completePath, data.toArray(new String[0]));
-                } else {
-                    throw new UnsupportedOperationException("Writing string arrays only supported for HDF5.");
-                }
+                N5StringUtils.save(data, writer, completePath, options.blockSize, options.compression); break;
             case CATEGORICAL_ARRAY:
+                writeCategoricalList(data, writer, completePath, options);
                 throw new UnsupportedOperationException("Writing categorical arrays not supported.");
-        }
+		}
         conditionallyAddToDataFrame(writer, completePath);
     }
-    
-    private static void writePrimitiveStringArray(final N5HDF5Writer writer, final String path, final String[] array) {
-        final IHDF5StringWriter stringWriter = HDF5Factory.open(writer.getFilename()).string();
-        stringWriter.writeArrayVL(path, array);
+
+    private static void writeCategoricalList(final List<String> data, final N5Writer writer, final String path, final N5Options options) {
+        final List<String> uniqueElements = data.stream().distinct().collect(Collectors.toList());
+        final Map<String, Integer> elementToCode = IntStream.range(0, uniqueElements.size()).boxed().collect(Collectors.toMap(uniqueElements::get, i -> i));
+        final Img<IntType> categories = ArrayImgs.ints(data.stream().mapToInt(elementToCode::get).toArray(), data.size(), 1);
+
+        writer.createGroup(path);
+        writeFieldType(writer, path, AnnDataFieldType.CATEGORICAL_ARRAY);
+        writer.setAttribute(path, ORDERED_KEY, false);
+
+        final AnnDataPath basePath = AnnDataPath.fromString(path);
+        N5StringUtils.save(uniqueElements, writer, basePath.append(CATEGORIES_DIR).toString(), options.blockSize, options.compression);
+        N5Utils.save(categories, writer, basePath.append(CODES_DIR).toString(), options.blockSize, options.compression);
     }
 
     private static void createMapping(final N5Writer writer, final String path) {

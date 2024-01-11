@@ -1,5 +1,6 @@
 package org.janelia.n5anndata.io;
 
+import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
@@ -39,12 +40,16 @@ public class N5StringUtils {
 	}
 
 	public static void save(final List<String> data, final N5Writer writer, final String path, final int[] blockSize) {
+		save(data, writer, path, blockSize, new GzipCompression());
+	}
+
+	public static void save(final List<String> data, final N5Writer writer, final String path, final int[] blockSize, final Compression compression) {
 		if (blockSize.length != 1 && (blockSize.length == 2 && blockSize[1] == 1)) {
 			throw new IllegalArgumentException("Block size '" + Arrays.toString(blockSize) + "' is not suitable for a 1D dataset");
 		}
 
 		final int size = data.size();
-		final DatasetAttributes attributes = new DatasetAttributes(new long[] {size}, blockSize, DataType.STRING, new GzipCompression());
+		final DatasetAttributes attributes = new DatasetAttributes(new long[] {size}, blockSize, DataType.STRING, compression);
 		writer.createDataset(path, attributes);
 
 		final int chunkSize = blockSize[0];

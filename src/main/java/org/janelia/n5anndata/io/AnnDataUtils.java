@@ -11,6 +11,7 @@ import net.imglib2.type.numeric.integer.IntType;
 import org.janelia.n5anndata.datastructures.CscArray;
 import org.janelia.n5anndata.datastructures.CsrArray;
 import org.janelia.n5anndata.datastructures.SparseArray;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.hdf5.N5HDF5Reader;
@@ -121,7 +122,8 @@ class AnnDataUtils {
 
     public static long getDataFrameIndexSize(final N5Reader reader, final String path) {
         final AnnDataPath indexPath = getDataFrameIndexPath(reader, path);
-        return reader.getAttribute(indexPath.toString(), SHAPE_KEY, long[].class)[0];
+        final DatasetAttributes attributes = reader.getDatasetAttributes(indexPath.toString());
+        return attributes.getDimensions()[0];
     }
 
     public static AnnDataFieldType getFieldType(final N5Reader reader, final String path) {

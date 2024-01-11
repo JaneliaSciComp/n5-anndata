@@ -1,6 +1,8 @@
 package org.janelia.n5anndata.io;
 
+import net.imglib2.Cursor;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
 import net.imglib2.type.numeric.integer.ShortType;
@@ -18,6 +20,7 @@ import org.janelia.saalfeldlab.n5.zarr.N5ZarrReader;
 import org.janelia.saalfeldlab.n5.zarr.N5ZarrWriter;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayNameGeneration;
@@ -44,7 +47,6 @@ import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Named.named;
@@ -53,10 +55,13 @@ import static org.junit.jupiter.api.Named.named;
 public class IoTest {
 
 	private static Path testDirectoryPath;
-	private static ExecutorService executorService;
+	private static ExecutorService executorService = Executors.newFixedThreadPool(4);
+	public static final N5Options ARRAY_OPTIONS = new N5Options(new int[]{2}, new GzipCompression(), executorService);
+	public static final N5Options MATRIX_OPTIONS = new N5Options(new int[]{2, 2}, new GzipCompression(), executorService);
 
 	private static final List<String> OBS_NAMES = Arrays.asList("a", "b", "cd", "efg");
 	private static final List<String> VAR_NAMES = Arrays.asList("cell1", "cell2", "cell3");
+	private static final Img<DoubleType> MATRIX = ArrayImgs.doubles(new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, 3, 4);
 
 	@BeforeAll
 	public static void setup() throws IOException {
@@ -87,7 +92,7 @@ public class IoTest {
 	}
 
 	@ParameterizedTest
-	@MethodSource("provideDatasetNames")
+	@MethodSource("datasetsWithDifferentBackends")
 	public void reading_and_writing_strings_from_list(final Supplier<N5Writer> writerSupplier) {
 		final List<String> expected = Arrays.asList("", "a", "b", "cd", "efg", ":-þ");
 		try (final N5Writer writer = writerSupplier.get()) {
@@ -100,16 +105,29 @@ public class IoTest {
 	}
 
 	@ParameterizedTest
-	@MethodSource("provideDatasetNames")
+	@MethodSource("datasetsWithDifferentBackends")
 	public void created_anndata_is_valid(final Supplier<N5Writer> writerSupplier) {
-		final N5Options options = new N5Options(new int[] {2}, new GzipCompression(), executorService);
 		try (final N5Writer writer = writerSupplier.get()) {
-			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, options);
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			assertTrue(AnnDataUtils.isValidAnnData(writer));
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
 		}
 	}
+
+	@ParameterizedTest
+	@MethodSource("datasetsWithDifferentBackends")
+	public void read_and_write_dense_matrix_to_X(final Supplier<N5Writer> writerSupplier) {
+		try (final N5Writer writer = writerSupplier.get()) {
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
+			AnnDataUtils.writeArray(MATRIX, writer, AnnDataField.X, "", MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.X, "");
+			assertEquals(MATRIX, actual);
+		} catch (final Exception e) {
+			fail("Could not write / read file: ", e);
+		}
+	}
+
 
 	/**
 	 To run this test, you need to have python installed and the following packages
@@ -247,7 +265,19 @@ public class IoTest {
 		return new N5Options(blockSize, compression, executorService);
 	}
 
-	protected static List<Named<Supplier<N5Writer>>> provideDatasetNames() {
+	private static <T> void assertEquals(final Img<T> expected, final Img<T> actual) {
+		assertArrayEquals(expected.dimensionsAsLongArray(), actual.dimensionsAsLongArray(), "Dimensions do not match.");
+		final Cursor<T> cursor = expected.cursor();
+		while (cursor.hasNext()) {
+			cursor.fwd();
+			final T expectedValue = cursor.get();
+			final T actualValue = actual.getAt(cursor);
+			Assertions.assertEquals(expectedValue, actualValue, "Values do not match at " + Arrays.toString(cursor.positionAsLongArray()));
+		}
+
+	}
+
+	protected static List<Named<Supplier<N5Writer>>> datasetsWithDifferentBackends() {
 		final String basePath = testDirectoryPath.toString();
 		return Arrays.asList(
 				named("HDF5", () -> new N5HDF5Writer(Paths.get(basePath, "data.h5ad").toString())),

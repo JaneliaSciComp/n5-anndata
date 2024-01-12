@@ -1,6 +1,7 @@
 package org.janelia.n5anndata.io;
 
 import net.imglib2.Cursor;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.integer.IntType;
@@ -8,6 +9,10 @@ import net.imglib2.type.numeric.integer.LongType;
 import net.imglib2.type.numeric.integer.ShortType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.view.Views;
+import org.janelia.n5anndata.datastructures.CscArray;
+import org.janelia.n5anndata.datastructures.CsrArray;
+import org.janelia.n5anndata.datastructures.SparseArray;
 import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.GzipCompression;
@@ -41,12 +46,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Named.named;
@@ -117,11 +122,56 @@ public class IoTest {
 
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
-	public void read_and_write_dense_matrix_to_X(final Supplier<N5Writer> writerSupplier) {
+	public void read_and_write_dense_matrix_in_X(final Supplier<N5Writer> writerSupplier) {
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			AnnDataUtils.writeArray(MATRIX, writer, AnnDataField.X, "", MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.X, "");
+			assertEquals(MATRIX, actual);
+		} catch (final Exception e) {
+			fail("Could not write / read file: ", e);
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("datasetsWithDifferentBackends")
+	public void write_dense_as_csr_in_varm(final Supplier<N5Writer> writerSupplier) {
+		try (final N5Writer writer = writerSupplier.get()) {
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
+			final RandomAccessibleInterval<DoubleType> transposed = Views.permute(MATRIX, 1, 0);
+			AnnDataUtils.writeArray(transposed, writer, AnnDataField.VARM, "test", MATRIX_OPTIONS, AnnDataFieldType.CSR_MATRIX);
+			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.VARM, "test");
+			assertInstanceOf(CsrArray.class, actual);
+			assertEquals(transposed, actual);
+		} catch (final Exception e) {
+			fail("Could not write / read file: ", e);
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("datasetsWithDifferentBackends")
+	public void write_csr_as_csc_in_obsm(final Supplier<N5Writer> writerSupplier) {
+		try (final N5Writer writer = writerSupplier.get()) {
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
+			final Img<DoubleType> csr = SparseArray.convertToSparse(MATRIX, 0);
+			AnnDataUtils.writeArray(csr, writer, AnnDataField.OBSM, "test", MATRIX_OPTIONS, AnnDataFieldType.CSC_MATRIX);
+			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.OBSM, "test");
+			assertInstanceOf(CscArray.class, actual);
+			assertEquals(MATRIX, actual);
+		} catch (final Exception e) {
+			fail("Could not write / read file: ", e);
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("datasetsWithDifferentBackends")
+	public void write_csc_as_dense_in_layers(final Supplier<N5Writer> writerSupplier) {
+		try (final N5Writer writer = writerSupplier.get()) {
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
+			final Img<DoubleType> csc = SparseArray.convertToSparse(MATRIX, 1);
+			AnnDataUtils.writeArray(csc, writer, AnnDataField.LAYERS, "test", MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.LAYERS, "test");
+			Assertions.assertEquals(AnnDataUtils.getFieldType(writer, AnnDataField.LAYERS.getPath("test")), AnnDataFieldType.DENSE_ARRAY);
 			assertEquals(MATRIX, actual);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
@@ -139,7 +189,7 @@ public class IoTest {
 	 */
 	@Test
 	public void consistency_with_python()
-			throws ExecutionException, InterruptedException, IOException {
+			throws IOException {
 		final List<String> extensions = Arrays.asList(".h5ad", ".zarr");
 		for (final String ext : extensions) {
 			final String pythonDataset = Paths.get(testDirectoryPath.toString(), "data_python") + ext;
@@ -174,7 +224,7 @@ public class IoTest {
 	}
 
 	private static void resaveDataset(final String pythonDataset, final String javaDataset)
-			throws ExecutionException, InterruptedException, IOException {
+			throws IOException {
 		final N5Reader reader = getReaderFor(pythonDataset);
 		final N5Writer writer = getWriterFor(javaDataset);
 
@@ -265,13 +315,13 @@ public class IoTest {
 		return new N5Options(blockSize, compression, EXECUTOR);
 	}
 
-	private static <T> void assertEquals(final Img<T> expected, final Img<T> actual) {
+	private static <T> void assertEquals(final RandomAccessibleInterval<T> expected, final Img<T> actual) {
 		assertArrayEquals(expected.dimensionsAsLongArray(), actual.dimensionsAsLongArray(), "Dimensions do not match.");
-		final Cursor<T> cursor = expected.cursor();
+		final Cursor<T> cursor = actual.cursor();
 		while (cursor.hasNext()) {
 			cursor.fwd();
-			final T expectedValue = cursor.get();
-			final T actualValue = actual.getAt(cursor);
+			final T actualValue = cursor.get();
+			final T expectedValue = expected.getAt(cursor);
 			Assertions.assertEquals(expectedValue, actualValue, "Values do not match at " + Arrays.toString(cursor.positionAsLongArray()));
 		}
 

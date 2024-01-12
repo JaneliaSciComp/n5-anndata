@@ -220,6 +220,19 @@ public class IoTest {
 		}
 	}
 
+	@ParameterizedTest
+	@MethodSource("datasetsWithDifferentBackends")
+	public void write_categoricals_in_var(final Supplier<N5Writer> writerSupplier) {
+		try (final N5Writer writer = writerSupplier.get()) {
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
+			AnnDataUtils.writeStringArray(VAR_NAMES, writer, AnnDataField.VAR, "test", ARRAY_OPTIONS, AnnDataFieldType.CATEGORICAL_ARRAY);
+			final List<String> actual = AnnDataUtils.readStringArray(writer, AnnDataField.VAR, "test");
+			assertIterableEquals(VAR_NAMES, actual);
+		} catch (final Exception e) {
+			fail("Could not write / read file: ", e);
+		}
+	}
+
 	/**
 	 To run this test, you need to have python installed and the following packages
 	 available: anndata, numpy, scipy, pandas, zarr, h5py.

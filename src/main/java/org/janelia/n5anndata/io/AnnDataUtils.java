@@ -364,7 +364,7 @@ class AnnDataUtils {
     private static void writeCategoricalList(final List<String> data, final N5Writer writer, final String path, final N5Options options) {
         final List<String> uniqueElements = data.stream().distinct().collect(Collectors.toList());
         final Map<String, Integer> elementToCode = IntStream.range(0, uniqueElements.size()).boxed().collect(Collectors.toMap(uniqueElements::get, i -> i));
-        final Img<IntType> categories = ArrayImgs.ints(data.stream().mapToInt(elementToCode::get).toArray(), data.size(), 1);
+        final Img<IntType> categories = ArrayImgs.ints(data.stream().mapToInt(elementToCode::get).toArray(), data.size());
 
         writer.createGroup(path);
         writeFieldType(writer, path, AnnDataFieldType.CATEGORICAL_ARRAY);

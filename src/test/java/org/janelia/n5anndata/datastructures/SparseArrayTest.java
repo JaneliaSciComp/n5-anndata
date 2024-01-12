@@ -1,6 +1,5 @@
 package org.janelia.n5anndata.datastructures;
 
-import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
@@ -31,7 +30,7 @@ public class SparseArrayTest {
 
 	@Test
 	public void csr_setup_is_correct() {
-		final CsrArray<DoubleType, LongType> csr = setupCsr();
+		final CsrMatrix<DoubleType, LongType> csr = setupCsr();
 		assertEquals(2, csr.numDimensions());
 		assertArrayEquals(new long[]{0, 0}, csr.minAsLongArray());
 		assertArrayEquals(new long[]{9, 8}, csr.maxAsLongArray());
@@ -39,9 +38,9 @@ public class SparseArrayTest {
 
 	@Test
 	public void iteration_order_equality_test_is_correct() {
-		final CsrArray<DoubleType, LongType> csr = setupCsr();
-		final CsrArray<DoubleType, LongType> csr2 = csr.copy();
-		final CscArray<DoubleType, LongType> csc = setupCsc();
+		final CsrMatrix<DoubleType, LongType> csr = setupCsr();
+		final CsrMatrix<DoubleType, LongType> csr2 = csr.copy();
+		final CscMatrix<DoubleType, LongType> csc = setupCsc();
 
 		assertEquals(csr.iterationOrder(), csr.iterationOrder());
 		assertEquals(csr.iterationOrder(), csr2.iterationOrder());
@@ -71,18 +70,18 @@ public class SparseArrayTest {
 		for (final SparseArray<DoubleType, LongType> sparse : sparseMatrices.values()) {
 			assertEquals(5, SparseArray.getNumberOfNonzeros(sparse));
 			final SparseArray<DoubleType, LongType> newCsr = SparseArray.convertToSparse(sparse, 0);
-			assertInstanceOf(CsrArray.class, newCsr);
+			assertInstanceOf(CsrMatrix.class, newCsr);
 			assert2DRaiEquals(sparse, newCsr);
 			final SparseArray<DoubleType, LongType> newCsc = SparseArray.convertToSparse(sparse, 1);
-			assertInstanceOf(CscArray.class, newCsc);
+			assertInstanceOf(CscMatrix.class, newCsc);
 			assert2DRaiEquals(sparse, newCsc);
 		}
 	}
 
 	@Test
 	public void csc_is_csr_transposed() {
-		final CsrArray<DoubleType, LongType> csr = setupCsr();
-		final CscArray<DoubleType, LongType> csc = setupCsc();
+		final CsrMatrix<DoubleType, LongType> csr = setupCsr();
+		final CscMatrix<DoubleType, LongType> csc = setupCsc();
 		assert2DRaiEquals(csr, Views.permute(csc, 0, 1));
 	}
 
@@ -95,12 +94,12 @@ public class SparseArrayTest {
 		assertEquals(90, nEntries);
 	}
 
-	protected static CsrArray<DoubleType, LongType> setupCsr() {
-		return (CsrArray<DoubleType, LongType>) sparseMatrices.get("CSR");
+	protected static CsrMatrix<DoubleType, LongType> setupCsr() {
+		return (CsrMatrix<DoubleType, LongType>) sparseMatrices.get("CSR");
 	}
 
-	protected static CscArray<DoubleType, LongType> setupCsc() {
-		return (CscArray<DoubleType, LongType>) sparseMatrices.get("CSC");
+	protected static CscMatrix<DoubleType, LongType> setupCsc() {
+		return (CscMatrix<DoubleType, LongType>) sparseMatrices.get("CSC");
 	}
 
 	@BeforeAll
@@ -110,8 +109,8 @@ public class SparseArrayTest {
 		final Img<LongType> indptr = ArrayImgs.longs(new long[]{0L, 1L, 2L, 3L, 3L, 3L, 3L, 3L, 3L, 5L}, 10);
 
 		sparseMatrices = new HashMap<>();
-		sparseMatrices.put("CSR", new CsrArray<>(10, 9, data, indices, indptr));
-		sparseMatrices.put("CSC", new CscArray<>(9, 10, data, indices, indptr));
+		sparseMatrices.put("CSR", new CsrMatrix<>(10, 9, data, indices, indptr));
+		sparseMatrices.put("CSC", new CscMatrix<>(9, 10, data, indices, indptr));
 	}
 
 	protected static <T extends Type<T>> void assert2DRaiEquals(

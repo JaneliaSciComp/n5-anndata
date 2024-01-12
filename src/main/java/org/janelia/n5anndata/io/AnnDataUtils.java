@@ -9,8 +9,8 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import org.janelia.n5anndata.datastructures.CscArray;
-import org.janelia.n5anndata.datastructures.CsrArray;
+import org.janelia.n5anndata.datastructures.CscMatrix;
+import org.janelia.n5anndata.datastructures.CsrMatrix;
 import org.janelia.n5anndata.datastructures.SparseArray;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Reader;
@@ -149,9 +149,9 @@ class AnnDataUtils {
             case DENSE_ARRAY:
                 return N5Utils.open(reader, completePath);
             case CSR_MATRIX:
-                return openSparseArray(reader, completePath, CsrArray<T,I>::new); // row
+                return openSparseArray(reader, completePath, CsrMatrix<T,I>::new); // row
             case CSC_MATRIX:
-                return openSparseArray(reader, completePath, CscArray<T,I>::new); // column
+                return openSparseArray(reader, completePath, CscMatrix<T,I>::new); // column
             default:
                 throw new UnsupportedOperationException("Reading numerical array data from " + type + " not supported.");
         }
@@ -243,10 +243,10 @@ class AnnDataUtils {
             final N5Options options) throws IOException {
 
         AnnDataFieldType type = AnnDataFieldType.DENSE_ARRAY;
-        if (data instanceof CsrArray) {
+        if (data instanceof CsrMatrix) {
             type = AnnDataFieldType.CSR_MATRIX;
         }
-        if (data instanceof CscArray) {
+        if (data instanceof CscMatrix) {
             type = AnnDataFieldType.CSC_MATRIX;
         }
 
@@ -317,8 +317,8 @@ class AnnDataUtils {
         if (type != AnnDataFieldType.CSR_MATRIX && type != AnnDataFieldType.CSC_MATRIX)
             throw new IllegalArgumentException("Sparse array type must be CSR or CSC.");
 
-        final boolean typeFitsData = (type == AnnDataFieldType.CSR_MATRIX && data instanceof CsrArray)
-                || (type == AnnDataFieldType.CSC_MATRIX && data instanceof CscArray);
+        final boolean typeFitsData = (type == AnnDataFieldType.CSR_MATRIX && data instanceof CsrMatrix)
+                || (type == AnnDataFieldType.CSC_MATRIX && data instanceof CscMatrix);
         final SparseArray<T, ?> sparse;
         if (typeFitsData) {
            sparse = (SparseArray<T, ?>) data;

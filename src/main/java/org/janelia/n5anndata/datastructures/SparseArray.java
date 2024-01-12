@@ -91,8 +91,8 @@ abstract public class SparseArray<
             indptrAccess.get().setLong(count);
         }
 
-        return (leadingDimension == 0) ? new CsrArray<>(rai.dimension(0), rai.dimension(1), data, indices, indptr)
-            : new CscArray<>(rai.dimension(0), rai.dimension(1), data, indices, indptr);
+        return (leadingDimension == 0) ? new CsrMatrix<>(rai.dimension(0), rai.dimension(1), data, indices, indptr)
+            : new CscMatrix<>(rai.dimension(0), rai.dimension(1), data, indices, indptr);
     }
 
     public static <T extends NumericType<T>> int getNumberOfNonzeros(final RandomAccessibleInterval<T> rai) {

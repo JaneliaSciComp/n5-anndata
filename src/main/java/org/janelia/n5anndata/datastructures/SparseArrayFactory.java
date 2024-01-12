@@ -40,8 +40,8 @@ public class SparseArrayFactory<
 		final int secondaryDimension = 1 - leadingDimension;
 		final ArrayImg<I, ?> indptr = new ArrayImgFactory<>(indexType).create(dimensions[secondaryDimension] + 1);
 
-		return (leadingDimension == 0) ? new CsrArray<>(dimensions[0], dimensions[1], data, indices, indptr)
-			: new CscArray<>(dimensions[0], dimensions[1], data, indices, indptr);
+		return (leadingDimension == 0) ? new CsrMatrix<>(dimensions[0], dimensions[1], data, indices, indptr)
+			: new CscMatrix<>(dimensions[0], dimensions[1], data, indices, indptr);
 	}
 
 	@Override

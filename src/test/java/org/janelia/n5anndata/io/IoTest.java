@@ -10,8 +10,8 @@ import net.imglib2.type.numeric.integer.ShortType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
-import org.janelia.n5anndata.datastructures.CscArray;
-import org.janelia.n5anndata.datastructures.CsrArray;
+import org.janelia.n5anndata.datastructures.CscMatrix;
+import org.janelia.n5anndata.datastructures.CsrMatrix;
 import org.janelia.n5anndata.datastructures.SparseArray;
 import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
@@ -144,7 +144,7 @@ public class IoTest {
 			final RandomAccessibleInterval<DoubleType> transposed = Views.permute(MATRIX, 1, 0);
 			AnnDataUtils.writeArray(transposed, writer, AnnDataField.VARM, "test", MATRIX_OPTIONS, AnnDataFieldType.CSR_MATRIX);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.VARM, "test");
-			assertInstanceOf(CsrArray.class, actual);
+			assertInstanceOf(CsrMatrix.class, actual);
 			assertEquals(transposed, actual);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
@@ -159,7 +159,7 @@ public class IoTest {
 			final Img<DoubleType> csr = SparseArray.convertToSparse(MATRIX, 0);
 			AnnDataUtils.writeArray(csr, writer, AnnDataField.OBSM, "test", MATRIX_OPTIONS, AnnDataFieldType.CSC_MATRIX);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.OBSM, "test");
-			assertInstanceOf(CscArray.class, actual);
+			assertInstanceOf(CscMatrix.class, actual);
 			assertEquals(MATRIX, actual);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);

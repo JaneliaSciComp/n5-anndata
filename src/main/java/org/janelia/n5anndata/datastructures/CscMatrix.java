@@ -9,11 +9,11 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 
-public class CscArray<
+public class CscMatrix<
 		T extends NumericType<T> & NativeType<T>,
 		I extends IntegerType<I> & NativeType<I>> extends SparseArray<T, I> {
 
-    public CscArray(final long numCols, final long numRows, final Img<T> data, final Img<I> indices, final Img<I> indptr) {
+    public CscMatrix(final long numCols, final long numRows, final Img<T> data, final Img<I> indices, final Img<I> indptr) {
         super(numCols, numRows, data, indices, indptr);
     }
 
@@ -28,11 +28,11 @@ public class CscArray<
 	}
 
 	@Override
-	public CscArray<T,I> copy() {
+	public CscMatrix<T,I> copy() {
 		final Img<T> dataCopy = data.copy();
 		final Img<I> indicesCopy = indices.copy();
 		final Img<I> indptrCopy = indptr.copy();
-		return new CscArray<>(dimension(0), dimension(1), dataCopy, indicesCopy, indptrCopy);
+		return new CscMatrix<>(dimension(0), dimension(1), dataCopy, indicesCopy, indptrCopy);
 	}
 
 	@Override
@@ -61,7 +61,7 @@ public class CscArray<
 		@Override
 		public boolean equals(final Object obj) {
 
-			if (!(obj instanceof CscArray.ColumnMajorIterationOrder2D))
+			if (!(obj instanceof CscMatrix.ColumnMajorIterationOrder2D))
 				return false;
 
 			return SparseArray.haveSameIterationSpace(interval, ((ColumnMajorIterationOrder2D) obj).interval);

@@ -31,33 +31,25 @@ public class Checker {
 		final AnnDataFieldType parentType = AnnDataUtils.getFieldType(reader, parentPath);
 		final long nObs = AnnDataUtils.getNObs(reader);
 		final long nVar = AnnDataUtils.getNVar(reader);
-		final long[] shape2D = ensure2D(shape);
 
 		if (! typeChecker.check(path.getField(), type, parentType)) {
 			final String msg = String.format("Cannot put '%s' at '%s' because it is not allowed by '%s' or the parent type ('%s')",
 											 type, path, path.getField(), parentType);
 			throw new AnnDataException(msg);
 		}
-		if (! dimensionChecker.checkFieldConstraints(path.getField(), shape2D, nObs, nVar)) {
+		if (! dimensionChecker.checkFieldConstraints(path.getField(), shape, nObs, nVar)) {
 			final String msg = String.format("Dimensions %s not compatible with nObs=%d and nVar=%d because of the constraints enforced by '%s'",
-											 Arrays.toString(shape2D), nObs, nVar, path.getField());
+											 Arrays.toString(shape), nObs, nVar, path.getField());
 			throw new AnnDataException(msg);
 		}
 		if (parentType == DATA_FRAME) {
 			final long indexSize = AnnDataUtils.getDataFrameIndexSize(reader, parentPath);
-			if (! dimensionChecker.checkDataFrameConstraints(shape2D, indexSize)) {
+			if (! dimensionChecker.checkDataFrameConstraints(shape, indexSize)) {
 				final String msg = String.format("Dimensions %s not compatible with data frame constraints of '%s' (index size=%d)",
-												 Arrays.toString(shape2D), parentPath, indexSize);
+												 Arrays.toString(shape), parentPath, indexSize);
 				throw new AnnDataException(msg);
 			}
 		}
-	}
-
-	private static long[] ensure2D(final long[] shape) {
-		if (shape.length == 1)
-			return new long[] {shape[0], 1};
-		else
-			return shape;
 	}
 
 
@@ -120,15 +112,19 @@ public class Checker {
 		public boolean checkFieldConstraints(final AnnDataField field, final long[] shape, final long nObs, final long nVar) {
 			switch (field) {
 				case X: case LAYERS:
-					return (shape[0] == nObs && shape[1] == nVar);
-				case OBS: case VAR:
-					return (shape[0] == nVar && shape[1] == 1);
-				case OBSM: case VARM:
-					return (shape[0] == nVar && shape[1] > 1);
+					return (is2D(shape) && shape[0] == nObs && shape[1] == nVar);
+				case OBS:
+					return (is1D(shape) && shape[0] == nObs);
+				case VAR:
+					return (is1D(shape) && shape[0] == nVar);
+				case OBSM:
+					return (is2D(shape) && shape[0] == nObs && shape[1] > 1);
+				case VARM:
+					return (is2D(shape) && shape[0] == nVar && shape[1] > 1);
 				case OBSP:
-					return (shape[0] == nObs && shape[1] == nObs);
+					return (is2D(shape) && shape[0] == nObs && shape[1] == nObs);
 				case VARP:
-					return (shape[0] == nVar && shape[1] == nVar);
+					return (is2D(shape) && shape[0] == nVar && shape[1] == nVar);
 				case UNS:
 					return true;
 				default:
@@ -138,7 +134,15 @@ public class Checker {
 
 		@Override
 		public boolean checkDataFrameConstraints(final long[] shape, final long indexSize) {
-			return (shape[0] == indexSize && shape[1] == 1);
+			return (is1D(shape) && shape[0] == indexSize);
+		}
+
+		private static boolean is1D(final long[] shape) {
+			return (shape.length == 1 || (shape.length == 2 && shape[1] == 1));
+		}
+
+		private static boolean is2D(final long[] shape) {
+			return (shape.length == 2);
 		}
 	}
 }

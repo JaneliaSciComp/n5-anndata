@@ -332,7 +332,7 @@ class AnnDataUtils {
 
     public static void createDataFrame(final List<String> index, final N5Writer writer, final AnnDataField field, final String path, final N5Options options) {
         final String completePath = field.getPath(path);
-        checker.check(writer, completePath, AnnDataFieldType.DATA_FRAME, new long[]{index.size(), 1});
+        checker.check(writer, completePath, AnnDataFieldType.DATA_FRAME, new long[] {index.size()});
 
         writer.createGroup(completePath);
         writeFieldType(writer, completePath, AnnDataFieldType.DATA_FRAME);
@@ -346,7 +346,7 @@ class AnnDataUtils {
 
     public static void writeStringArray(final List<String> data, final N5Writer writer, final AnnDataField field, final String path, final N5Options options, final AnnDataFieldType type) {
         final String completePath = field.getPath(path);
-        checker.check(writer, completePath, type, new long[]{data.size(), 1});
+        checker.check(writer, completePath, type, new long[] {data.size()});
         AnnDataFieldType.checkIfStringArray(type);
 
         switch (type) {

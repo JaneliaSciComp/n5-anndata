@@ -53,6 +53,7 @@ public enum AnnDataField {
 		return getPath("");
 	}
 
+	@Deprecated
 	public String getPath(final String subPath) {
 		return Paths.get(basePath, subPath).toString();
 	}

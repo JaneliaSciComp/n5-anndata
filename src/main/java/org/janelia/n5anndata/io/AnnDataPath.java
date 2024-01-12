@@ -1,6 +1,8 @@
 package org.janelia.n5anndata.io;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class AnnDataPath {
 
@@ -8,51 +10,57 @@ public class AnnDataPath {
 	private static final String SEPARATOR = "/";
 
 	private final AnnDataField field;
-	private final String[] subPaths;
+	private final List<String> keys;
 
-	public AnnDataPath(final AnnDataField field, final String... subPaths) {
+	public AnnDataPath(final AnnDataField field, final String... keys) {
+		this(field, Arrays.asList(keys));
+	}
+
+	public AnnDataPath(final AnnDataField field, final List<String> keys) {
 		this.field = field;
-		this.subPaths = subPaths;
+		this.keys = keys;
 	}
 
 	public AnnDataField getField() {
 		return field;
 	}
 
-	public String getSubPath() {
-		return String.join(SEPARATOR, subPaths);
+	public String keysAsString() {
+		return String.join(SEPARATOR, keys);
 	}
 
 	public String toString() {
-		if (subPaths.length == 0) {
+		if (keys.isEmpty()) {
 			return ROOT + field.toString();
 		} else {
-			return ROOT + field.getPath(getSubPath());
+			return ROOT + field.toString() + SEPARATOR + keysAsString();
 		}
 	}
 
 	public String getParentPath() {
-		if (subPaths.length == 0) {
+		if (keys.isEmpty()) {
 			return ROOT;
-		} else if (subPaths.length == 1) {
-			return ROOT + field.toString();
 		} else {
-			return new AnnDataPath(field, Arrays.copyOfRange(subPaths, 0, subPaths.length - 1)).toString();
+			return new AnnDataPath(field, keys.subList(0, keys.size() - 1)).toString();
 		}
 	}
 
 	public String getLeaf() {
-		if (subPaths.length == 0) {
+		if (keys.isEmpty()) {
 			return field.toString();
 		} else {
-			return subPaths[subPaths.length - 1];
+			return keys.get(keys.size() - 1);
 		}
 	}
 
-	public AnnDataPath append(final String... additionalPaths) {
-		final String[] newSubPaths = Arrays.copyOf(subPaths, subPaths.length + additionalPaths.length);
-		System.arraycopy(additionalPaths, 0, newSubPaths, subPaths.length, additionalPaths.length);
-		return new AnnDataPath(field, newSubPaths);
+	public AnnDataPath append(final String... additionalKeys) {
+		return append(Arrays.asList(additionalKeys));
+	}
+
+	public AnnDataPath append(final List<String> additionalKeys) {
+		final List<String> newKeys = new ArrayList<>(keys);
+		newKeys.addAll(additionalKeys);
+		return new AnnDataPath(field, newKeys);
 	}
 
 	public static AnnDataPath fromString(final String path) {
@@ -65,12 +73,8 @@ public class AnnDataPath {
 			throw new IllegalArgumentException("Invalid path: " + path);
 
 		final AnnDataField field = AnnDataField.fromString(parts[0]);
-		if (parts.length == 1) {
-			return new AnnDataPath(field);
-		} else {
-			final String[] subPaths = Arrays.copyOfRange(parts, 1, parts.length);
-			return new AnnDataPath(field, subPaths);
-		}
+		final String[] subKeys = (parts.length == 1) ? new String[0] : Arrays.copyOfRange(parts, 1, parts.length);
+		return new AnnDataPath(field, subKeys);
 	}
 
 	private static String withoutLeadingRoot(final String path) {

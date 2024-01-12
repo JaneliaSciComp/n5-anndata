@@ -129,7 +129,7 @@ class AnnDataUtils {
 
     public static List<String> readDataFrameIndex(final N5Reader reader, final AnnDataField field, final String path) {
         final AnnDataPath indexPath = getDataFrameIndexPath(reader, field.getPath(path));
-        return readStringArray(reader, field, indexPath.getSubPath());
+        return readStringArray(reader, field, indexPath.keysAsString());
     }
 
     public static AnnDataFieldType getFieldType(final N5Reader reader, final String path) {
@@ -352,7 +352,7 @@ class AnnDataUtils {
         final Checker oldChecker = checker;
         setChecker(Checker.NONE);
         final AnnDataPath indexPath = AnnDataPath.fromString(completePath).append(DEFAULT_INDEX_DIR);
-        writeStringArray(index, writer, field, indexPath.getSubPath(), options, AnnDataFieldType.STRING_ARRAY);
+        writeStringArray(index, writer, field, indexPath.keysAsString(), options, AnnDataFieldType.STRING_ARRAY);
         setChecker(oldChecker);
     }
 

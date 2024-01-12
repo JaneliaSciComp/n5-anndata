@@ -246,8 +246,8 @@ public class IoTest {
 				AnnDataUtils.createMapping(writer, path.toString());
 			}
 			path = path.append("test3");
-			AnnDataUtils.writeArray(MATRIX, writer, AnnDataField.UNS, path.getSubPath(), MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
-			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.UNS, path.getSubPath());
+			AnnDataUtils.writeArray(MATRIX, writer, AnnDataField.UNS, path.keysAsString(), MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.UNS, path.keysAsString());
 			assertEquals(MATRIX, actual);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
@@ -261,10 +261,10 @@ public class IoTest {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			AnnDataUtils.createDataFrame(OBS_NAMES, writer, AnnDataField.OBSM, "test", ARRAY_OPTIONS);
 			final AnnDataPath datasetPath = new AnnDataPath(AnnDataField.OBSM, "test", "data");
-			AnnDataUtils.writeStringArray(OBS_NAMES, writer, AnnDataField.OBSM, datasetPath.getSubPath(), ARRAY_OPTIONS, AnnDataFieldType.STRING_ARRAY);
+			AnnDataUtils.writeStringArray(OBS_NAMES, writer, AnnDataField.OBSM, datasetPath.keysAsString(), ARRAY_OPTIONS, AnnDataFieldType.STRING_ARRAY);
 			final List<String> actualIndex = AnnDataUtils.readDataFrameIndex(writer, AnnDataField.OBSM, "test");
 			assertIterableEquals(OBS_NAMES, actualIndex);
-			final List<String> actualData = AnnDataUtils.readStringArray(writer, AnnDataField.OBSM, datasetPath.getSubPath());
+			final List<String> actualData = AnnDataUtils.readStringArray(writer, AnnDataField.OBSM, datasetPath.keysAsString());
 			assertIterableEquals(OBS_NAMES, actualData);
 			final Set<String> datasets = AnnDataUtils.getExistingDataFrameDatasets(writer, AnnDataField.OBSM, "test");
 			assertIterableEquals(Collections.singletonList("data"), datasets);

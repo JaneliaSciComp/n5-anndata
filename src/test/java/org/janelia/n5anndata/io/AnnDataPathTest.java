@@ -29,7 +29,7 @@ public class AnnDataPathTest {
 		final AnnDataPath actualPath = AnnDataPath.fromString(expectedParentPath);
 		assertEquals(AnnDataField.OBS, actualPath.getField());
 		assertEquals("bar", actualPath.getLeaf());
-		assertEquals("test/foo/bar", actualPath.getSubPath());
+		assertEquals("test/foo/bar", actualPath.keysAsString());
 		assertEquals("/obs/test/foo", actualPath.getParentPath());
 	}
 
@@ -39,7 +39,7 @@ public class AnnDataPathTest {
 		final AnnDataPath actualPath = AnnDataPath.fromString(expectedParentPath);
 		assertEquals(AnnDataField.OBS, actualPath.getField());
 		assertEquals(AnnDataField.OBS.getPath(), actualPath.getLeaf());
-		assertEquals("", actualPath.getSubPath());
+		assertEquals("", actualPath.keysAsString());
 		assertEquals(AnnDataPath.ROOT, actualPath.getParentPath());
 	}
 

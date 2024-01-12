@@ -233,6 +233,25 @@ public class IoTest {
 		}
 	}
 
+	@ParameterizedTest
+	@MethodSource("datasetsWithDifferentBackends")
+	public void nested_mappings_in_uns(final Supplier<N5Writer> writerSupplier) {
+		try (final N5Writer writer = writerSupplier.get()) {
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
+			AnnDataPath path = new AnnDataPath(AnnDataField.UNS);
+			for (int i = 0; i < 3; i++) {
+				path = path.append("test" + i);
+				AnnDataUtils.createMapping(writer, path.toString());
+			}
+			path = path.append("test3");
+			AnnDataUtils.writeArray(MATRIX, writer, AnnDataField.UNS, path.getSubPath(), MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.UNS, path.getSubPath());
+			assertEquals(MATRIX, actual);
+		} catch (final Exception e) {
+			fail("Could not write / read file: ", e);
+		}
+	}
+
 	/**
 	 To run this test, you need to have python installed and the following packages
 	 available: anndata, numpy, scipy, pandas, zarr, h5py.

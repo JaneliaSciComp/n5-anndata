@@ -375,7 +375,7 @@ class AnnDataUtils {
         N5Utils.save(categories, writer, basePath.append(CODES_DIR).toString(), options.blockSize, options.compression);
     }
 
-    private static void createMapping(final N5Writer writer, final String path) {
+    public static void createMapping(final N5Writer writer, final String path) {
         writer.createGroup(path);
         writeFieldType(writer, path, AnnDataFieldType.MAPPING);
     }

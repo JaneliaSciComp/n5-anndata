@@ -52,6 +52,7 @@ import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Named.named;
@@ -178,6 +179,46 @@ public class IoTest {
 		}
 	}
 
+	@ParameterizedTest
+	@MethodSource("datasetsWithDifferentBackends")
+	public void write_floats_in_obsp(final Supplier<N5Writer> writerSupplier) {
+		try (final N5Writer writer = writerSupplier.get()) {
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
+			final Img<FloatType> expected = ArrayImgs.floats(new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 4, 4);
+			AnnDataUtils.writeArray(expected, writer, AnnDataField.OBSP, "test", MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			final Img<FloatType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.OBSP, "test");
+			assertEquals(expected, actual);
+		} catch (final Exception e) {
+			fail("Could not write / read file: ", e);
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("datasetsWithDifferentBackends")
+	public void write_shorts_in_varp(final Supplier<N5Writer> writerSupplier) {
+		try (final N5Writer writer = writerSupplier.get()) {
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
+			final Img<ShortType> expected = ArrayImgs.shorts(new short[] {1, 2, 3, 4, 5, 6, 7, 8, 9}, 3, 3);
+			AnnDataUtils.writeArray(expected, writer, AnnDataField.VARP, "test", MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			final Img<ShortType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.VARP, "test");
+			assertEquals(expected, actual);
+		} catch (final Exception e) {
+			fail("Could not write / read file: ", e);
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("datasetsWithDifferentBackends")
+	public void write_strings_in_obs(final Supplier<N5Writer> writerSupplier) {
+		try (final N5Writer writer = writerSupplier.get()) {
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
+			AnnDataUtils.writeStringArray(OBS_NAMES, writer, AnnDataField.OBS, "test", ARRAY_OPTIONS, AnnDataFieldType.STRING_ARRAY);
+			final List<String> actual = AnnDataUtils.readStringArray(writer, AnnDataField.OBS, "test");
+			assertIterableEquals(OBS_NAMES, actual);
+		} catch (final Exception e) {
+			fail("Could not write / read file: ", e);
+		}
+	}
 
 	/**
 	 To run this test, you need to have python installed and the following packages

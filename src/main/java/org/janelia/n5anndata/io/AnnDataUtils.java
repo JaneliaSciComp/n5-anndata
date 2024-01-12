@@ -168,7 +168,7 @@ class AnnDataUtils {
 
     public static List<String> readStringArray(final N5Reader reader, final AnnDataField field, final String path) {
         final String completePath = field.getPath(path);
-        final AnnDataFieldType type = getFieldType(reader, path);
+        final AnnDataFieldType type = getFieldType(reader, completePath);
         switch (type) {
             case STRING_ARRAY:
                 return N5StringUtils.open(reader, completePath);
@@ -256,7 +256,7 @@ class AnnDataUtils {
             final N5Options options,
             final AnnDataFieldType type) throws IOException {
 
-        AnnDataFieldType.checkIfNumericalArray(type);
+        AnnDataFieldType.ensureNumericalArray(type);
         final long[] shape = flip(data.dimensionsAsLongArray());
         final String completePath = field.getPath(path);
         checker.check(writer, completePath, type, shape);
@@ -348,15 +348,16 @@ class AnnDataUtils {
     public static void writeStringArray(final List<String> data, final N5Writer writer, final AnnDataField field, final String path, final N5Options options, final AnnDataFieldType type) {
         final String completePath = field.getPath(path);
         checker.check(writer, completePath, type, new long[] {data.size()});
-        AnnDataFieldType.checkIfStringArray(type);
+        AnnDataFieldType.ensureStringArray(type);
 
         switch (type) {
             case STRING_ARRAY:
-                N5StringUtils.save(data, writer, completePath, options.blockSize, options.compression); break;
+                N5StringUtils.save(data, writer, completePath, options.blockSize, options.compression);
+                writeFieldType(writer, completePath, type);
+                break;
             case CATEGORICAL_ARRAY:
                 writeCategoricalList(data, writer, completePath, options);
-                throw new UnsupportedOperationException("Writing categorical arrays not supported.");
-		}
+        }
         conditionallyAddToDataFrame(writer, completePath);
     }
 

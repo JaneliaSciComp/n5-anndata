@@ -36,13 +36,13 @@ public enum AnnDataFieldType {
 		return "encoding: " + encoding + ", version: " + version;
 	}
 
-	public static void checkIfNumericalArray(final AnnDataFieldType type) {
+	public static void ensureNumericalArray(final AnnDataFieldType type) {
 		if (type != DENSE_ARRAY && type != CSR_MATRIX && type != CSC_MATRIX) {
 			throw new AnnDataException("Numerical array type expected, but got " + type);
 		}
 	}
 
-	public static void checkIfStringArray(final AnnDataFieldType type) {
+	public static void ensureStringArray(final AnnDataFieldType type) {
 		if (type != STRING_ARRAY && type != CATEGORICAL_ARRAY) {
 			throw new AnnDataException("String array type expected, but got " + type);
 		}

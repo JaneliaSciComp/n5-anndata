@@ -15,10 +15,6 @@ public class AnnDataPath {
 		this.subPaths = subPaths;
 	}
 
-	public AnnDataPath(final String field, final String... subPaths) {
-		this(AnnDataField.fromString(field), subPaths);
-	}
-
 	public AnnDataField getField() {
 		return field;
 	}
@@ -37,7 +33,7 @@ public class AnnDataPath {
 		} else if (subPaths.length == 1) {
 			return ROOT + field.toString();
 		} else {
-			return ROOT + field.toString() + SEPARATOR + field.getPath(String.join(SEPARATOR, Arrays.copyOfRange(subPaths, 0, subPaths.length - 1)));
+			return ROOT + field.getPath(String.join(SEPARATOR, Arrays.copyOfRange(subPaths, 0, subPaths.length - 1)));
 		}
 	}
 
@@ -57,7 +53,7 @@ public class AnnDataPath {
 
 	public static AnnDataPath fromString(final String path) {
 		if (path == null || path.isEmpty())
-			throw new IllegalArgumentException("Empty path: " + path);
+			throw new IllegalArgumentException("Invalid path: " + path);
 
 		final String normalizedPath = withoutLeadingRoot(path);
 		final String[] parts = normalizedPath.split(SEPARATOR);
@@ -68,16 +64,12 @@ public class AnnDataPath {
 		if (parts.length == 1) {
 			return new AnnDataPath(field);
 		} else {
-			final String[] subPaths = Arrays.copyOfRange(parts, 2, parts.length);
+			final String[] subPaths = Arrays.copyOfRange(parts, 1, parts.length);
 			return new AnnDataPath(field, subPaths);
 		}
 	}
 
-	private static String withoutLeadingRoot(String path) {
-		if (path.startsWith(ROOT)) {
-			return path.substring(1);
-		} else {
-			return path;
-		}
+	private static String withoutLeadingRoot(final String path) {
+		return path.startsWith(ROOT) ? path.substring(1) : path;
 	}
 }

@@ -11,6 +11,7 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 
 	private final long[] max;
 	private boolean isHit = false;
+	private boolean isInitialized = false;
 	private final int leadingDim;
 	private final int secondaryDim;
 	private final T fillValue;
@@ -43,15 +44,13 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 
 		this.img = img;
 		max = new long[]{img.dimension(0)-1, img.dimension(1)-1};
-		this.leadingDim = leadingDimension;
-		this.secondaryDim = 1 - leadingDimension;
+		leadingDim = leadingDimension;
+		secondaryDim = 1 - leadingDimension;
 
-		this.dataCursor = img.data.cursor();
-		this.indicesCursor = img.indices.localizingCursor();
-		this.indptrAccess = img.indptr.randomAccess();
-		dataCursor.fwd();
-		indicesCursor.fwd();
-		indptrAccess.setPosition(0, 0);
+		dataCursor = img.data.cursor();
+		indicesCursor = img.indices.localizingCursor();
+		indptrAccess = img.indptr.randomAccess();
+		reset();
 
 		this.fillValue = fillValue.copy();
 		this.fillValue.setZero();
@@ -60,9 +59,7 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 
 	@Override
 	public T get() {
-		if (isHit)
-			return dataCursor.get();
-		return fillValue;
+		return isHit ? dataCursor.get() : fillValue;
 	}
 
 	@Override
@@ -72,8 +69,12 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 
 	@Override
 	public void fwd() {
-		if (isHit)
+		if (! isInitialized) {
+			isInitialized = true;
 			advanceToNextNonzeroElement();
+		} else if (isHit) {
+			advanceToNextNonzeroElement();
+		}
 
 		// always: advance to next element in picture ...
 		if (position[leadingDim] < max[leadingDim]) {
@@ -84,8 +85,8 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 		}
 
 		// ... and check if it is a hit
-		isHit = indicesCursor.get().getIntegerLong() == position[leadingDim]
-				&& indptrAccess.getLongPosition(0) == position[secondaryDim];
+		isHit = (indicesCursor.get().getIntegerLong() == position[leadingDim]
+				&& indptrAccess.getLongPosition(0) == position[secondaryDim]);
 	}
 
 	protected void advanceToNextNonzeroElement() {

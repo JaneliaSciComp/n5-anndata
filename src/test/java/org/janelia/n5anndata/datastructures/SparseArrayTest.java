@@ -1,5 +1,6 @@
 package org.janelia.n5anndata.datastructures;
 
+import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
@@ -83,6 +84,15 @@ public class SparseArrayTest {
 		final CsrArray<DoubleType, LongType> csr = setupCsr();
 		final CscArray<DoubleType, LongType> csc = setupCsc();
 		assert2DRaiEquals(csr, Views.permute(csc, 0, 1));
+	}
+
+	@Test
+	public void iterating_exhausts_entries() {
+		int nEntries = 0;
+		for (final DoubleType entry : setupCsr()) {
+			nEntries++;
+		}
+		assertEquals(90, nEntries);
 	}
 
 	protected static CsrArray<DoubleType, LongType> setupCsr() {

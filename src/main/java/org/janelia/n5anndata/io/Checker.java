@@ -3,6 +3,7 @@ package org.janelia.n5anndata.io;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.janelia.n5anndata.io.AnnDataFieldType.*;
 
@@ -29,24 +30,27 @@ public class Checker {
 	public void check(final N5Reader reader, final AnnDataPath path, final AnnDataFieldType type, final long[] shape) {
 		final String parentPath = path.getParentPath();
 		final AnnDataFieldType parentType = AnnDataUtils.getFieldType(reader, parentPath);
-		final long nObs = AnnDataUtils.getNObs(reader);
-		final long nVar = AnnDataUtils.getNVar(reader);
 
 		if (! typeChecker.check(path.getField(), type, parentType)) {
 			final String msg = String.format("Cannot put '%s' at '%s' because it is not allowed by '%s' or the parent type ('%s')",
 											 type, path, path.getField(), parentType);
 			throw new AnnDataException(msg);
 		}
-		if (! dimensionChecker.checkFieldConstraints(path.getField(), shape, nObs, nVar)) {
-			final String msg = String.format("Dimensions %s not compatible with nObs=%d and nVar=%d because of the constraints enforced by '%s'",
-											 Arrays.toString(shape), nObs, nVar, path.getField());
-			throw new AnnDataException(msg);
-		}
+
+		final long nObs = AnnDataUtils.getNObs(reader);
+		final long nVar = AnnDataUtils.getNVar(reader);
+
 		if (parentType == DATA_FRAME) {
 			final long indexSize = AnnDataUtils.getDataFrameIndexSize(reader, parentPath);
 			if (! dimensionChecker.checkDataFrameConstraints(shape, indexSize)) {
 				final String msg = String.format("Dimensions %s not compatible with data frame constraints of '%s' (index size=%d)",
 												 Arrays.toString(shape), parentPath, indexSize);
+				throw new AnnDataException(msg);
+			}
+		} else {
+			if (!dimensionChecker.checkFieldConstraints(path.getField(), shape, nObs, nVar)) {
+				final String msg = String.format("Dimensions %s not compatible with nObs=%d and nVar=%d because of the constraints enforced by '%s'",
+												 Arrays.toString(shape), nObs, nVar, path.getField());
 				throw new AnnDataException(msg);
 			}
 		}
@@ -77,12 +81,14 @@ public class Checker {
 		}
 	}
 	private static class StrictTypeChecker implements TypeChecker {
+		public static final List<AnnDataFieldType> ALLOWED_DATA_FRAME_TYPES = Arrays.asList(STRING_ARRAY, CATEGORICAL_ARRAY, DENSE_ARRAY);
+
 		@Override
 		public boolean check(final AnnDataField field, final AnnDataFieldType type, final AnnDataFieldType parentType) {
 			if (parentType == ANNDATA) {
 				return field.canBeA(type);
 			} else if (parentType == DATA_FRAME) {
-				return true;
+				return ALLOWED_DATA_FRAME_TYPES.contains(type);
 			} else {
 				return field.canHaveAsChild(type);
 			}
@@ -113,10 +119,8 @@ public class Checker {
 			switch (field) {
 				case X: case LAYERS:
 					return (is2D(shape) && shape[0] == nObs && shape[1] == nVar);
-				case OBS:
-					return (is1D(shape) && shape[0] == nObs);
-				case VAR:
-					return (is1D(shape) && shape[0] == nVar);
+				case OBS: case VAR:
+					return true; // constraints are given by the data frame
 				case OBSM:
 					return (is2D(shape) && shape[0] == nObs && shape[1] > 1);
 				case VARM:

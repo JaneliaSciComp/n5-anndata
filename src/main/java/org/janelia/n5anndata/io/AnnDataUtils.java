@@ -127,6 +127,11 @@ class AnnDataUtils {
         return attributes.getDimensions()[0];
     }
 
+    public static List<String> readDataFrameIndex(final N5Reader reader, final AnnDataField field, final String path) {
+        final AnnDataPath indexPath = getDataFrameIndexPath(reader, field.getPath(path));
+        return readStringArray(reader, field, indexPath.getSubPath());
+    }
+
     public static AnnDataFieldType getFieldType(final N5Reader reader, final String path) {
         final String encoding = reader.getAttribute(path, ENCODING_KEY, String.class);
         final String version = reader.getAttribute(path, VERSION_KEY, String.class);
@@ -294,9 +299,11 @@ class AnnDataUtils {
             return;
 
         final String columnName = path.getLeaf();
-        final Set<String> existingData = getExistingDataFrameDatasets(writer, parent);
-        existingData.add(columnName);
-        writer.setAttribute(completePath, COLUMN_ORDER_KEY, existingData.toArray());
+        if (! columnName.equals(INDEX_KEY)) {
+            final Set<String> existingData = getExistingDataFrameDatasets(writer, parent);
+            existingData.add(columnName);
+            writer.setAttribute(parent, COLUMN_ORDER_KEY, existingData.toArray());
+        }
     }
 
     private static <T extends NativeType<T> & RealType<T>> void writeSparseArray(
@@ -333,7 +340,7 @@ class AnnDataUtils {
 
     public static void createDataFrame(final List<String> index, final N5Writer writer, final AnnDataField field, final String path, final N5Options options) {
         final String completePath = field.getPath(path);
-        checker.check(writer, completePath, AnnDataFieldType.DATA_FRAME, new long[] {index.size()});
+        checker.check(writer, completePath, AnnDataFieldType.DATA_FRAME, new long[] {index.size(), Integer.MAX_VALUE});
 
         writer.createGroup(completePath);
         writeFieldType(writer, completePath, AnnDataFieldType.DATA_FRAME);
@@ -342,7 +349,11 @@ class AnnDataUtils {
         writer.setAttribute(completePath, COLUMN_ORDER_KEY, isHDF5 ? "" : new String[0]);
         writer.setAttribute(completePath, INDEX_KEY, DEFAULT_INDEX_DIR);
 
-        writeStringArray(index, writer, field, DEFAULT_INDEX_DIR, options, AnnDataFieldType.STRING_ARRAY);
+        final Checker oldChecker = checker;
+        setChecker(Checker.NONE);
+        final AnnDataPath indexPath = AnnDataPath.fromString(completePath).append(DEFAULT_INDEX_DIR);
+        writeStringArray(index, writer, field, indexPath.getSubPath(), options, AnnDataFieldType.STRING_ARRAY);
+        setChecker(oldChecker);
     }
 
     public static void writeStringArray(final List<String> data, final N5Writer writer, final AnnDataField field, final String path, final N5Options options, final AnnDataFieldType type) {

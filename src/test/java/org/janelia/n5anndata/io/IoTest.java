@@ -43,9 +43,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
@@ -247,6 +249,25 @@ public class IoTest {
 			AnnDataUtils.writeArray(MATRIX, writer, AnnDataField.UNS, path.getSubPath(), MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.UNS, path.getSubPath());
 			assertEquals(MATRIX, actual);
+		} catch (final Exception e) {
+			fail("Could not write / read file: ", e);
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("datasetsWithDifferentBackends")
+	public void create_and_populate_dataframe(final Supplier<N5Writer> writerSupplier) {
+		try (final N5Writer writer = writerSupplier.get()) {
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
+			AnnDataUtils.createDataFrame(OBS_NAMES, writer, AnnDataField.OBSM, "test", ARRAY_OPTIONS);
+			final AnnDataPath datasetPath = new AnnDataPath(AnnDataField.OBSM, "test", "data");
+			AnnDataUtils.writeStringArray(OBS_NAMES, writer, AnnDataField.OBSM, datasetPath.getSubPath(), ARRAY_OPTIONS, AnnDataFieldType.STRING_ARRAY);
+			final List<String> actualIndex = AnnDataUtils.readDataFrameIndex(writer, AnnDataField.OBSM, "test");
+			assertIterableEquals(OBS_NAMES, actualIndex);
+			final List<String> actualData = AnnDataUtils.readStringArray(writer, AnnDataField.OBSM, datasetPath.getSubPath());
+			assertIterableEquals(OBS_NAMES, actualData);
+			final Set<String> datasets = AnnDataUtils.getExistingDataFrameDatasets(writer, AnnDataField.OBSM, "test");
+			assertIterableEquals(Collections.singletonList("data"), datasets);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
 		}

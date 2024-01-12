@@ -7,7 +7,6 @@ import java.util.List;
 public class AnnDataPath {
 
 	public static final AnnDataPath ROOT = new AnnDataRootPath();
-	public static final String ROOT_CHAR = "/";
 	private static final String SEPARATOR = "/";
 
 	private final AnnDataField field;
@@ -38,11 +37,11 @@ public class AnnDataPath {
 		}
 	}
 
-	public String getParentPath() {
+	public AnnDataPath getParentPath() {
 		if (keys.isEmpty()) {
-			return ROOT_CHAR;
+			return ROOT;
 		} else {
-			return new AnnDataPath(field, keys.subList(0, keys.size() - 1)).toString();
+			return new AnnDataPath(field, keys.subList(0, keys.size() - 1));
 		}
 	}
 
@@ -88,6 +87,8 @@ public class AnnDataPath {
 
 
 	private static class AnnDataRootPath extends AnnDataPath {
+		public static final String ROOT_CHAR = "/";
+
 		public AnnDataRootPath() {
 			super(null, new ArrayList<>());
 		}
@@ -108,7 +109,7 @@ public class AnnDataPath {
 		}
 
 		@Override
-		public String getParentPath() {
+		public AnnDataPath getParentPath() {
 			throw new UnsupportedOperationException("Root path has no parent");
 		}
 

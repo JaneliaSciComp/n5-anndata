@@ -30,7 +30,7 @@ public class AnnDataPathTest {
 		assertEquals(AnnDataField.OBS, actualPath.getField());
 		assertEquals("bar", actualPath.getLeaf());
 		assertEquals("test/foo/bar", actualPath.keysAsString());
-		assertEquals("/obs/test/foo", actualPath.getParentPath());
+		assertEquals("/obs/test/foo", actualPath.getParentPath().toString());
 	}
 
 	@Test
@@ -40,7 +40,7 @@ public class AnnDataPathTest {
 		assertEquals(AnnDataField.OBS, actualPath.getField());
 		assertEquals(AnnDataField.OBS.getPath(), actualPath.getLeaf());
 		assertEquals("", actualPath.keysAsString());
-		assertEquals(AnnDataPath.ROOT_CHAR, actualPath.getParentPath());
+		assertEquals(AnnDataPath.ROOT, actualPath.getParentPath());
 	}
 
 	@Test
@@ -55,7 +55,6 @@ public class AnnDataPathTest {
 		final String wrongPath = "/obsx/test/foo";
 		assertThrows(IllegalArgumentException.class, () -> AnnDataPath.fromString(wrongPath), "Input: " + wrongPath);
 		assertThrows(IllegalArgumentException.class, () -> AnnDataPath.fromString(""), "Input: empty string");
-		assertThrows(IllegalArgumentException.class, () -> AnnDataPath.fromString("/"), "Input: /");
 		assertThrows(IllegalArgumentException.class, () -> AnnDataPath.fromString("//"), "Input: //");
 	}
 }

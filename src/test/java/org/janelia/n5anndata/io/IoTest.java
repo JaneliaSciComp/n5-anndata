@@ -10,6 +10,7 @@ import net.imglib2.type.numeric.integer.ShortType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
+import org.checkerframework.checker.units.qual.A;
 import org.janelia.n5anndata.datastructures.CscMatrix;
 import org.janelia.n5anndata.datastructures.CsrMatrix;
 import org.janelia.n5anndata.datastructures.SparseArray;
@@ -126,10 +127,11 @@ public class IoTest {
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
 	public void read_and_write_dense_matrix_in_X(final Supplier<N5Writer> writerSupplier) {
+		final AnnDataPath path = new AnnDataPath(AnnDataField.X);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			AnnDataUtils.writeArray(MATRIX, writer, AnnDataField.X, "", MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
-			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.X, "");
+			AnnDataUtils.writeArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertEquals(MATRIX, actual);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
@@ -139,11 +141,12 @@ public class IoTest {
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
 	public void write_dense_as_csr_in_varm(final Supplier<N5Writer> writerSupplier) {
+		final AnnDataPath path = new AnnDataPath(AnnDataField.VARM, "test");
+		final RandomAccessibleInterval<DoubleType> transposed = Views.permute(MATRIX, 1, 0);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			final RandomAccessibleInterval<DoubleType> transposed = Views.permute(MATRIX, 1, 0);
-			AnnDataUtils.writeArray(transposed, writer, AnnDataField.VARM, "test", MATRIX_OPTIONS, AnnDataFieldType.CSR_MATRIX);
-			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.VARM, "test");
+			AnnDataUtils.writeArray(transposed, writer, path, MATRIX_OPTIONS, AnnDataFieldType.CSR_MATRIX);
+			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertInstanceOf(CsrMatrix.class, actual);
 			assertEquals(transposed, actual);
 		} catch (final Exception e) {
@@ -154,11 +157,12 @@ public class IoTest {
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
 	public void write_csr_as_csc_in_obsm(final Supplier<N5Writer> writerSupplier) {
+		final AnnDataPath path = new AnnDataPath(AnnDataField.OBSM, "test");
+		final Img<DoubleType> csr = SparseArray.convertToSparse(MATRIX, 0);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			final Img<DoubleType> csr = SparseArray.convertToSparse(MATRIX, 0);
-			AnnDataUtils.writeArray(csr, writer, AnnDataField.OBSM, "test", MATRIX_OPTIONS, AnnDataFieldType.CSC_MATRIX);
-			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.OBSM, "test");
+			AnnDataUtils.writeArray(csr, writer, path, MATRIX_OPTIONS, AnnDataFieldType.CSC_MATRIX);
+			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertInstanceOf(CscMatrix.class, actual);
 			assertEquals(MATRIX, actual);
 		} catch (final Exception e) {
@@ -169,12 +173,13 @@ public class IoTest {
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
 	public void write_csc_as_dense_in_layers(final Supplier<N5Writer> writerSupplier) {
+		final AnnDataPath path = new AnnDataPath(AnnDataField.LAYERS, "test");
+		final Img<DoubleType> csc = SparseArray.convertToSparse(MATRIX, 1);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			final Img<DoubleType> csc = SparseArray.convertToSparse(MATRIX, 1);
-			AnnDataUtils.writeArray(csc, writer, AnnDataField.LAYERS, "test", MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
-			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.LAYERS, "test");
-			Assertions.assertEquals(AnnDataUtils.getFieldType(writer, AnnDataField.LAYERS.getPath("test")), AnnDataFieldType.DENSE_ARRAY);
+			AnnDataUtils.writeArray(csc, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
+			Assertions.assertEquals(AnnDataUtils.getFieldType(writer, path), AnnDataFieldType.DENSE_ARRAY);
 			assertEquals(MATRIX, actual);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
@@ -184,11 +189,12 @@ public class IoTest {
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
 	public void write_floats_in_obsp(final Supplier<N5Writer> writerSupplier) {
+		final AnnDataPath path = new AnnDataPath(AnnDataField.OBSP, "test");
+		final Img<FloatType> expected = ArrayImgs.floats(new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 4, 4);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			final Img<FloatType> expected = ArrayImgs.floats(new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 4, 4);
-			AnnDataUtils.writeArray(expected, writer, AnnDataField.OBSP, "test", MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
-			final Img<FloatType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.OBSP, "test");
+			AnnDataUtils.writeArray(expected, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			final Img<FloatType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertEquals(expected, actual);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
@@ -198,11 +204,12 @@ public class IoTest {
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
 	public void write_shorts_in_varp(final Supplier<N5Writer> writerSupplier) {
+		final AnnDataPath path = new AnnDataPath(AnnDataField.VARP, "test");
+		final Img<ShortType> expected = ArrayImgs.shorts(new short[] {1, 2, 3, 4, 5, 6, 7, 8, 9}, 3, 3);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			final Img<ShortType> expected = ArrayImgs.shorts(new short[] {1, 2, 3, 4, 5, 6, 7, 8, 9}, 3, 3);
-			AnnDataUtils.writeArray(expected, writer, AnnDataField.VARP, "test", MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
-			final Img<ShortType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.VARP, "test");
+			AnnDataUtils.writeArray(expected, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			final Img<ShortType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertEquals(expected, actual);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
@@ -212,10 +219,11 @@ public class IoTest {
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
 	public void write_strings_in_obs(final Supplier<N5Writer> writerSupplier) {
+		final AnnDataPath path = new AnnDataPath(AnnDataField.OBS, "test");
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			AnnDataUtils.writeStringArray(OBS_NAMES, writer, AnnDataField.OBS, "test", ARRAY_OPTIONS, AnnDataFieldType.STRING_ARRAY);
-			final List<String> actual = AnnDataUtils.readStringArray(writer, AnnDataField.OBS, "test");
+			AnnDataUtils.writeStringArray(OBS_NAMES, writer, path, ARRAY_OPTIONS, AnnDataFieldType.STRING_ARRAY);
+			final List<String> actual = AnnDataUtils.readStringArray(writer, path);
 			assertIterableEquals(OBS_NAMES, actual);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
@@ -225,10 +233,11 @@ public class IoTest {
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
 	public void write_categoricals_in_var(final Supplier<N5Writer> writerSupplier) {
+		final AnnDataPath path = new AnnDataPath(AnnDataField.VAR, "test");
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			AnnDataUtils.writeStringArray(VAR_NAMES, writer, AnnDataField.VAR, "test", ARRAY_OPTIONS, AnnDataFieldType.CATEGORICAL_ARRAY);
-			final List<String> actual = AnnDataUtils.readStringArray(writer, AnnDataField.VAR, "test");
+			AnnDataUtils.writeStringArray(VAR_NAMES, writer, path, ARRAY_OPTIONS, AnnDataFieldType.CATEGORICAL_ARRAY);
+			final List<String> actual = AnnDataUtils.readStringArray(writer, path);
 			assertIterableEquals(VAR_NAMES, actual);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
@@ -238,16 +247,16 @@ public class IoTest {
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
 	public void nested_mappings_in_uns(final Supplier<N5Writer> writerSupplier) {
+		AnnDataPath path = new AnnDataPath(AnnDataField.UNS);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			AnnDataPath path = new AnnDataPath(AnnDataField.UNS);
 			for (int i = 0; i < 3; i++) {
 				path = path.append("test" + i);
-				AnnDataUtils.createMapping(writer, path.toString());
+				AnnDataUtils.createMapping(writer, path);
 			}
 			path = path.append("test3");
-			AnnDataUtils.writeArray(MATRIX, writer, AnnDataField.UNS, path.keysAsString(), MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
-			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, AnnDataField.UNS, path.keysAsString());
+			AnnDataUtils.writeArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertEquals(MATRIX, actual);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
@@ -257,16 +266,17 @@ public class IoTest {
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
 	public void create_and_populate_dataframe(final Supplier<N5Writer> writerSupplier) {
+		final AnnDataPath path = new AnnDataPath(AnnDataField.OBSM, "test");
+		final AnnDataPath datasetPath = path.append("data");
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			AnnDataUtils.createDataFrame(OBS_NAMES, writer, AnnDataField.OBSM, "test", ARRAY_OPTIONS);
-			final AnnDataPath datasetPath = new AnnDataPath(AnnDataField.OBSM, "test", "data");
-			AnnDataUtils.writeStringArray(OBS_NAMES, writer, AnnDataField.OBSM, datasetPath.keysAsString(), ARRAY_OPTIONS, AnnDataFieldType.STRING_ARRAY);
-			final List<String> actualIndex = AnnDataUtils.readDataFrameIndex(writer, AnnDataField.OBSM, "test");
+			AnnDataUtils.createDataFrame(OBS_NAMES, writer, path, ARRAY_OPTIONS);
+			AnnDataUtils.writeStringArray(OBS_NAMES, writer, datasetPath, ARRAY_OPTIONS, AnnDataFieldType.STRING_ARRAY);
+			final List<String> actualIndex = AnnDataUtils.readDataFrameIndex(writer, path);
 			assertIterableEquals(OBS_NAMES, actualIndex);
-			final List<String> actualData = AnnDataUtils.readStringArray(writer, AnnDataField.OBSM, datasetPath.keysAsString());
+			final List<String> actualData = AnnDataUtils.readStringArray(writer, datasetPath);
 			assertIterableEquals(OBS_NAMES, actualData);
-			final Set<String> datasets = AnnDataUtils.getExistingDataFrameDatasets(writer, AnnDataField.OBSM, "test");
+			final Set<String> datasets = AnnDataUtils.getExistingDataFrameDatasets(writer, path);
 			assertIterableEquals(Collections.singletonList("data"), datasets);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
@@ -322,64 +332,65 @@ public class IoTest {
 		final N5Reader reader = getReaderFor(pythonDataset);
 		final N5Writer writer = getWriterFor(javaDataset);
 
-		final Img<DoubleType> X = AnnDataUtils.readNumericalArray(reader, AnnDataField.X, "");
-		N5Options options = getOptionsFor(reader, AnnDataField.X.getPath(""));
-		AnnDataUtils.writeArray(X, writer, AnnDataField.X, "", options, AnnDataFieldType.CSR_MATRIX);
+		AnnDataPath path = new AnnDataPath(AnnDataField.X);
+		final Img<DoubleType> X = AnnDataUtils.readNumericalArray(reader, path);
+		N5Options options = getOptionsFor(reader, path);
+		AnnDataUtils.writeArray(X, writer, path, options, AnnDataFieldType.CSR_MATRIX);
 
-		String path = "rnd";
-		final Img<DoubleType> csr = AnnDataUtils.readNumericalArray(reader, AnnDataField.OBSP, path);
-		options = getOptionsFor(reader, AnnDataField.OBSP.getPath(path));
-		AnnDataUtils.writeArray(csr, writer, AnnDataField.OBS, path, options, AnnDataFieldType.CSR_MATRIX);
+		path = new AnnDataPath(AnnDataField.OBSP, "rnd");
+		final Img<DoubleType> csr = AnnDataUtils.readNumericalArray(reader, path);
+		options = getOptionsFor(reader, path);
+		AnnDataUtils.writeArray(csr, writer, path, options, AnnDataFieldType.CSR_MATRIX);
 
-		path = "rnd";
-		final Img<ShortType> csc = AnnDataUtils.readNumericalArray(reader, AnnDataField.VARP, path);
-		options = getOptionsFor(reader, AnnDataField.VARP.getPath(path));
-		AnnDataUtils.writeArray(csc, writer, AnnDataField.VARP, path, options, AnnDataFieldType.CSC_MATRIX);
+		path = new AnnDataPath(AnnDataField.VARP, "rnd");
+		final Img<ShortType> csc = AnnDataUtils.readNumericalArray(reader, path);
+		options = getOptionsFor(reader, path);
+		AnnDataUtils.writeArray(csc, writer, path, options, AnnDataFieldType.CSC_MATRIX);
 
-		path = "_index";
-		final List<String> obs_names = AnnDataUtils.readStringArray(reader, AnnDataField.OBS, path);
-		options = getOptionsFor(reader, AnnDataField.OBS.getPath(path));
-		AnnDataUtils.writeStringArray(obs_names, writer, AnnDataField.OBS, path, options, AnnDataFieldType.STRING_ARRAY);
+		path = new AnnDataPath(AnnDataField.OBS, "_index");
+		final List<String> obs_names = AnnDataUtils.readStringArray(reader, path);
+		options = getOptionsFor(reader, path);
+		AnnDataUtils.writeStringArray(obs_names, writer, path, options, AnnDataFieldType.STRING_ARRAY);
 
-		path = "_index";
-		final List<String> var_names = AnnDataUtils.readStringArray(reader, AnnDataField.VAR, path);
-		options = getOptionsFor(reader, AnnDataField.VAR.getPath(path));
-		AnnDataUtils.writeStringArray(var_names, writer, AnnDataField.VAR, path, options, AnnDataFieldType.STRING_ARRAY);
+		path = new AnnDataPath(AnnDataField.VAR, "_index");
+		final List<String> var_names = AnnDataUtils.readStringArray(reader, path);
+		options = getOptionsFor(reader, path);
+		AnnDataUtils.writeStringArray(var_names, writer, path, options, AnnDataFieldType.STRING_ARRAY);
 
-		path = "cell_type";
-		final List<String> cell_type = AnnDataUtils.readStringArray(reader, AnnDataField.OBS, path);
-		options = getOptionsFor(reader, AnnDataField.OBS.getPath(path));
-		AnnDataUtils.writeStringArray(cell_type, writer, AnnDataField.OBS, path, options, AnnDataFieldType.CATEGORICAL_ARRAY);
+		path = new AnnDataPath(AnnDataField.OBS, "cell_type");
+		final List<String> cell_type = AnnDataUtils.readStringArray(reader, path);
+		options = getOptionsFor(reader, path);
+		AnnDataUtils.writeStringArray(cell_type, writer, path, options, AnnDataFieldType.CATEGORICAL_ARRAY);
 
-		path = "gene_stuff1";
-		final Img<IntType> genes1 = AnnDataUtils.readNumericalArray(reader, AnnDataField.VAR, path);
-		options = getOptionsFor(reader, AnnDataField.VAR.getPath(path));
-		AnnDataUtils.writeArray(genes1, writer, AnnDataField.VAR, path, options, AnnDataFieldType.DENSE_ARRAY);
+		path = new AnnDataPath(AnnDataField.VAR, "gene_stuff1");
+		final Img<IntType> genes1 = AnnDataUtils.readNumericalArray(reader, path);
+		options = getOptionsFor(reader, path);
+		AnnDataUtils.writeArray(genes1, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
 
-		path = "gene_stuff2";
-		final Img<LongType> genes2 = AnnDataUtils.readNumericalArray(reader, AnnDataField.VAR, path);
-		options = getOptionsFor(reader, AnnDataField.VAR.getPath(path));
-		AnnDataUtils.writeArray(genes2, writer, AnnDataField.VAR, path, options, AnnDataFieldType.DENSE_ARRAY);
+		path = new AnnDataPath(AnnDataField.VAR, "gene_stuff2");
+		final Img<LongType> genes2 = AnnDataUtils.readNumericalArray(reader, path);
+		options = getOptionsFor(reader, path);
+		AnnDataUtils.writeArray(genes2, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
 
-		path = "X_umap";
-		final Img<DoubleType> umap1 = AnnDataUtils.readNumericalArray(reader, AnnDataField.OBS, path);
-		options = getOptionsFor(reader, AnnDataField.OBS.getPath(path));
-		AnnDataUtils.writeArray(umap1, writer, AnnDataField.OBS, path, options, AnnDataFieldType.DENSE_ARRAY);
+		path = new AnnDataPath(AnnDataField.OBS, "X_umap");
+		final Img<DoubleType> umap1 = AnnDataUtils.readNumericalArray(reader, path);
+		options = getOptionsFor(reader, path);
+		AnnDataUtils.writeArray(umap1, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
 
-		path = "X_umap";
-		final Img<DoubleType> umap2 = AnnDataUtils.readNumericalArray(reader, AnnDataField.VARM, path);
-		options = getOptionsFor(reader, AnnDataField.VARM.getPath(path));
-		AnnDataUtils.writeArray(umap2, writer, AnnDataField.VARM, path, options, AnnDataFieldType.DENSE_ARRAY);
+		path = new AnnDataPath(AnnDataField.VARM, "X_umap");
+		final Img<DoubleType> umap2 = AnnDataUtils.readNumericalArray(reader, path);
+		options = getOptionsFor(reader, path);
+		AnnDataUtils.writeArray(umap2, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
 
-		path = "random";
-		final Img<DoubleType> uns = AnnDataUtils.readNumericalArray(reader, AnnDataField.UNS, path);
-		options = getOptionsFor(reader, AnnDataField.UNS.getPath(path));
-		AnnDataUtils.writeArray(uns, writer, AnnDataField.UNS, path, options, AnnDataFieldType.DENSE_ARRAY);
+		path = new AnnDataPath(AnnDataField.UNS, "random");
+		final Img<DoubleType> uns = AnnDataUtils.readNumericalArray(reader, path);
+		options = getOptionsFor(reader, path);
+		AnnDataUtils.writeArray(uns, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
 
-		path = "log";
-		final Img<FloatType> log = AnnDataUtils.readNumericalArray(reader, AnnDataField.LAYERS, path);
-		options = getOptionsFor(reader, AnnDataField.LAYERS.getPath(path));
-		AnnDataUtils.writeArray(log, writer, AnnDataField.LAYERS, path, options, AnnDataFieldType.CSR_MATRIX);
+		path = new AnnDataPath(AnnDataField.LAYERS, "log");
+		final Img<FloatType> log = AnnDataUtils.readNumericalArray(reader, path);
+		options = getOptionsFor(reader, path);
+		AnnDataUtils.writeArray(log, writer, path, options, AnnDataFieldType.CSR_MATRIX);
 	}
 
 	private static N5Reader getReaderFor(final String dataset) {
@@ -402,8 +413,8 @@ public class IoTest {
 		}
 	}
 
-	private static N5Options getOptionsFor(final N5Reader reader, final String path) {
-		final DatasetAttributes attributes = reader.getDatasetAttributes(path);
+	private static N5Options getOptionsFor(final N5Reader reader, final AnnDataPath path) {
+		final DatasetAttributes attributes = reader.getDatasetAttributes(path.toString());
 		final int[] blockSize = attributes.getBlockSize();
 		final Compression compression = attributes.getCompression();
 		return new N5Options(blockSize, compression, EXECUTOR);

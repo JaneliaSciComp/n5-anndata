@@ -28,7 +28,7 @@ public class Checker {
 	}
 
 	public void check(final N5Reader reader, final AnnDataPath path, final AnnDataFieldType type, final long[] shape) {
-		final String parentPath = path.getParentPath();
+		final AnnDataPath parentPath = path.getParentPath();
 		final AnnDataFieldType parentType = AnnDataUtils.getFieldType(reader, parentPath);
 
 		if (! typeChecker.check(path.getField(), type, parentType)) {

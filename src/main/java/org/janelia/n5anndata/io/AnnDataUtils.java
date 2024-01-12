@@ -9,6 +9,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import org.checkerframework.checker.units.qual.A;
 import org.janelia.n5anndata.datastructures.CscMatrix;
 import org.janelia.n5anndata.datastructures.CsrMatrix;
 import org.janelia.n5anndata.datastructures.SparseArray;
@@ -69,21 +70,21 @@ class AnnDataUtils {
         final Checker oldChecker = checker;
         setChecker(Checker.NONE);
 
-        if (writer.list(AnnDataPath.ROOT_CHAR).length > 0) {
+        if (writer.list(AnnDataPath.ROOT.toString()).length > 0) {
             throw new AnnDataException("Cannot initialize AnnData: target container is not empty.");
         }
 
-        writer.createGroup(AnnDataPath.ROOT_CHAR);
-        writeFieldType(writer, AnnDataPath.ROOT_CHAR, AnnDataFieldType.ANNDATA);
+        writer.createGroup(AnnDataPath.ROOT.toString());
+        writeFieldType(writer, AnnDataPath.ROOT, AnnDataFieldType.ANNDATA);
 
-        createDataFrame(obsNames, writer, AnnDataField.OBS, "", obsOptions);
-        createDataFrame(varNames, writer, AnnDataField.VAR, "", varOptions);
-        createMapping(writer, AnnDataField.LAYERS.getPath());
-        createMapping(writer, AnnDataField.OBSM.getPath());
-        createMapping(writer, AnnDataField.OBSP.getPath());
-        createMapping(writer, AnnDataField.VARM.getPath());
-        createMapping(writer, AnnDataField.VARP.getPath());
-        createMapping(writer, AnnDataField.UNS.getPath());
+        createDataFrame(obsNames, writer, new AnnDataPath(AnnDataField.OBS), obsOptions);
+        createDataFrame(varNames, writer, new AnnDataPath(AnnDataField.VAR), varOptions);
+        createMapping(writer, new AnnDataPath(AnnDataField.LAYERS));
+        createMapping(writer, new AnnDataPath(AnnDataField.OBSM));
+        createMapping(writer, new AnnDataPath(AnnDataField.OBSP));
+        createMapping(writer, new AnnDataPath(AnnDataField.VARM));
+        createMapping(writer, new AnnDataPath(AnnDataField.VARP));
+        createMapping(writer, new AnnDataPath(AnnDataField.UNS));
 
         setChecker(oldChecker);
     }
@@ -99,15 +100,15 @@ class AnnDataUtils {
     // TODO: check metadata for all fields
     public static boolean isValidAnnData(final N5Reader reader) {
         try {
-            return getFieldType(reader, AnnDataPath.ROOT_CHAR).equals(AnnDataFieldType.ANNDATA)
-                    && reader.exists(AnnDataField.OBS.getPath()) && isDataFrame(reader, AnnDataField.OBS.getPath())
-                    && reader.exists(AnnDataField.VAR.getPath()) && isDataFrame(reader, AnnDataField.VAR.getPath())
-                    && reader.exists(AnnDataField.LAYERS.getPath()) && getFieldType(reader, AnnDataField.LAYERS.getPath()).equals(AnnDataFieldType.MAPPING)
-                    && reader.exists(AnnDataField.OBSM.getPath()) && getFieldType(reader, AnnDataField.OBSM.getPath()).equals(AnnDataFieldType.MAPPING)
-                    && reader.exists(AnnDataField.OBSP.getPath()) && getFieldType(reader, AnnDataField.OBSP.getPath()).equals(AnnDataFieldType.MAPPING)
-                    && reader.exists(AnnDataField.VARM.getPath()) && getFieldType(reader, AnnDataField.VARM.getPath()).equals(AnnDataFieldType.MAPPING)
-                    && reader.exists(AnnDataField.VARP.getPath()) && getFieldType(reader, AnnDataField.VARP.getPath()).equals(AnnDataFieldType.MAPPING)
-                    && reader.exists(AnnDataField.UNS.getPath()) && getFieldType(reader, AnnDataField.UNS.getPath()).equals(AnnDataFieldType.MAPPING);
+            return getFieldType(reader, AnnDataPath.ROOT).equals(AnnDataFieldType.ANNDATA)
+                    && reader.exists(AnnDataField.OBS.getPath()) && isDataFrame(reader, new AnnDataPath(AnnDataField.OBS))
+                    && reader.exists(AnnDataField.VAR.getPath()) && isDataFrame(reader, new AnnDataPath(AnnDataField.VAR))
+                    && reader.exists(AnnDataField.LAYERS.getPath()) && getFieldType(reader, new AnnDataPath(AnnDataField.LAYERS)).equals(AnnDataFieldType.MAPPING)
+                    && reader.exists(AnnDataField.OBSM.getPath()) && getFieldType(reader, new AnnDataPath(AnnDataField.OBSM)).equals(AnnDataFieldType.MAPPING)
+                    && reader.exists(AnnDataField.OBSP.getPath()) && getFieldType(reader, new AnnDataPath(AnnDataField.OBSP)).equals(AnnDataFieldType.MAPPING)
+                    && reader.exists(AnnDataField.VARM.getPath()) && getFieldType(reader, new AnnDataPath(AnnDataField.VARM)).equals(AnnDataFieldType.MAPPING)
+                    && reader.exists(AnnDataField.VARP.getPath()) && getFieldType(reader, new AnnDataPath(AnnDataField.VARP)).equals(AnnDataFieldType.MAPPING)
+                    && reader.exists(AnnDataField.UNS.getPath()) && getFieldType(reader, new AnnDataPath(AnnDataField.UNS)).equals(AnnDataFieldType.MAPPING);
         } catch (final Exception e) {
             return false;
         }
@@ -122,36 +123,52 @@ class AnnDataUtils {
     }
 
     public static long getDataFrameIndexSize(final N5Reader reader, final String path) {
+       return getDataFrameIndexSize(reader, AnnDataPath.fromString(path));
+    }
+
+    public static long getDataFrameIndexSize(final N5Reader reader, final AnnDataPath path) {
         final AnnDataPath indexPath = getDataFrameIndexPath(reader, path);
         final DatasetAttributes attributes = reader.getDatasetAttributes(indexPath.toString());
         return attributes.getDimensions()[0];
     }
 
-    public static List<String> readDataFrameIndex(final N5Reader reader, final AnnDataField field, final String path) {
-        final AnnDataPath indexPath = getDataFrameIndexPath(reader, field.getPath(path));
-        return readStringArray(reader, field, indexPath.keysAsString());
+    public static List<String> readDataFrameIndex(final N5Reader reader, final String path) {
+        return readDataFrameIndex(reader, AnnDataPath.fromString(path));
+    }
+
+    public static List<String> readDataFrameIndex(final N5Reader reader, final AnnDataPath path) {
+        final AnnDataPath indexPath = getDataFrameIndexPath(reader, path);
+        return readStringArray(reader, indexPath);
     }
 
     public static AnnDataFieldType getFieldType(final N5Reader reader, final String path) {
-        final String encoding = reader.getAttribute(path, ENCODING_KEY, String.class);
-        final String version = reader.getAttribute(path, VERSION_KEY, String.class);
+        return getFieldType(reader, AnnDataPath.fromString(path));
+    }
+
+    public static AnnDataFieldType getFieldType(final N5Reader reader, final AnnDataPath path) {
+        final String encoding = reader.getAttribute(path.toString(), ENCODING_KEY, String.class);
+        final String version = reader.getAttribute(path.toString(), VERSION_KEY, String.class);
         return AnnDataFieldType.fromString(encoding, version);
     }
 
     public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
-    Img<T> readNumericalArray(final N5Reader reader, final AnnDataField field, final String path) {
-        final String completePath = field.getPath(path);
-        final AnnDataFieldType type = getFieldType(reader, completePath);
+    Img<T> readNumericalArray(final N5Reader reader, final String path) {
+        return readNumericalArray(reader, AnnDataPath.fromString(path));
+    }
+
+    public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
+    Img<T> readNumericalArray(final N5Reader reader, final AnnDataPath path) {
+        final AnnDataFieldType type = getFieldType(reader, path);
         switch (type) {
             case MISSING:
                 System.out.println("Array is missing metadata. Assuming dense array.");
-                return N5Utils.open(reader, completePath);
+                return N5Utils.open(reader, path.toString());
             case DENSE_ARRAY:
-                return N5Utils.open(reader, completePath);
+                return N5Utils.open(reader, path.toString());
             case CSR_MATRIX:
-                return openSparseArray(reader, completePath, CsrMatrix<T,I>::new); // row
+                return openSparseArray(reader, path, CsrMatrix<T,I>::new); // row
             case CSC_MATRIX:
-                return openSparseArray(reader, completePath, CscMatrix<T,I>::new); // column
+                return openSparseArray(reader, path, CscMatrix<T,I>::new); // column
             default:
                 throw new UnsupportedOperationException("Reading numerical array data from " + type + " not supported.");
         }
@@ -160,25 +177,28 @@ class AnnDataUtils {
     private static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
     SparseArray<T, I> openSparseArray(
             final N5Reader reader,
-            final String path,
+            final AnnDataPath path,
             final SparseArrayConstructor<T, I> constructor) {
 
-        final Img<T> sparseData = N5Utils.open(reader, path + DATA_DIR);
-        final Img<I> indices = N5Utils.open(reader, path + INDICES_DIR);
-        final Img<I> indptr = N5Utils.open(reader, path + INDPTR_DIR);
+        final Img<T> sparseData = N5Utils.open(reader, path.append(DATA_DIR).toString());
+        final Img<I> indices = N5Utils.open(reader, path.append(INDICES_DIR).toString());
+        final Img<I> indptr = N5Utils.open(reader, path.append(INDPTR_DIR).toString());
 
-        final long[] shape = reader.getAttribute(path, SHAPE_KEY, long[].class);
+        final long[] shape = reader.getAttribute(path.toString(), SHAPE_KEY, long[].class);
         return constructor.apply(shape[1], shape[0], sparseData, indices, indptr);
     }
 
-    public static List<String> readStringArray(final N5Reader reader, final AnnDataField field, final String path) {
-        final String completePath = field.getPath(path);
-        final AnnDataFieldType type = getFieldType(reader, completePath);
+    public static List<String> readStringArray(final N5Reader reader, final String path) {
+        return readStringArray(reader, AnnDataPath.fromString(path));
+    }
+
+    public static List<String> readStringArray(final N5Reader reader, final AnnDataPath path) {
+        final AnnDataFieldType type = getFieldType(reader, path.toString());
         switch (type) {
             case STRING_ARRAY:
-                return N5StringUtils.open(reader, completePath);
+                return N5StringUtils.open(reader, path.toString());
             case CATEGORICAL_ARRAY:
-                return readCategoricalList(reader, completePath);
+                return readCategoricalList(reader, path);
             default:
                 throw new AnnDataException("Reading string array for '" + type + "' not supported.");
         }
@@ -189,18 +209,17 @@ class AnnDataUtils {
         return hdf5Reader.readStringArray(path);
     }
 
-    public static Set<String> getExistingDataFrameDatasets(final N5Reader reader, final AnnDataField field, final String dataFrame) {
-        final String completePath = field.getPath(dataFrame);
-        return getExistingDataFrameDatasets(reader, completePath);
+    public static Set<String> getExistingDataFrameDatasets(final N5Reader reader, final String path) {
+        return getExistingDataFrameDatasets(reader, AnnDataPath.fromString(path));
     }
 
-    private static Set<String> getExistingDataFrameDatasets(final N5Reader reader, final String path) {
-        if (!reader.exists(path)) {
+    public static Set<String> getExistingDataFrameDatasets(final N5Reader reader, final AnnDataPath path) {
+        if (!reader.exists(path.toString())) {
             return new HashSet<>();
         }
 
-        String[] rawArray = reader.getAttribute(path, COLUMN_ORDER_KEY, String[].class);
-        rawArray = (rawArray == null) ? reader.list(path) : rawArray;
+        String[] rawArray = reader.getAttribute(path.toString(), COLUMN_ORDER_KEY, String[].class);
+        rawArray = (rawArray == null) ? reader.list(path.toString()) : rawArray;
 
         if (rawArray == null || rawArray.length == 0) {
             return new HashSet<>();
@@ -211,10 +230,9 @@ class AnnDataUtils {
         return datasets;
     }
 
-    private static List<String> readCategoricalList(final N5Reader reader, final String path) {
-        final AnnDataPath basePath = AnnDataPath.fromString(path);
-        final List<String> categoryNames = N5StringUtils.open(reader, basePath.append(CATEGORIES_DIR).toString());
-        final Img<? extends IntegerType<?>> categories = N5Utils.open(reader, basePath.append(CODES_DIR).toString());
+    private static List<String> readCategoricalList(final N5Reader reader, final AnnDataPath path) {
+        final List<String> categoryNames = N5StringUtils.open(reader, path.append(CATEGORIES_DIR).toString());
+        final Img<? extends IntegerType<?>> categories = N5Utils.open(reader, path.append(CODES_DIR).toString());
 
         final int nElements = (int) categories.size();
         final List<String> denormalizedNames = new ArrayList<>(nElements);
@@ -225,21 +243,24 @@ class AnnDataUtils {
         return denormalizedNames;
     }
 
-    private static void writeFieldType(final N5Writer writer, final AnnDataField field, final String path, final AnnDataFieldType type) {
-        final String completePath = field.getPath(path);
-        writeFieldType(writer, completePath, type);
-    }
-
-    private static void writeFieldType(final N5Writer writer, final String path, final AnnDataFieldType type) {
-        writer.setAttribute(path, ENCODING_KEY, type.getEncoding());
-        writer.setAttribute(path, VERSION_KEY, type.getVersion());
+    private static void writeFieldType(final N5Writer writer, final AnnDataPath path, final AnnDataFieldType type) {
+        writer.setAttribute(path.toString(), ENCODING_KEY, type.getEncoding());
+        writer.setAttribute(path.toString(), VERSION_KEY, type.getVersion());
     }
 
     public static <T extends NativeType<T> & RealType<T>> void writeArray(
             final Img<T> data,
             final N5Writer writer,
-            final AnnDataField field,
             final String path,
+            final N5Options options) throws IOException {
+
+        writeArray(data, writer, AnnDataPath.fromString(path), options);
+    }
+
+    public static <T extends NativeType<T> & RealType<T>> void writeArray(
+            final Img<T> data,
+            final N5Writer writer,
+            final AnnDataPath path,
             final N5Options options) throws IOException {
 
         AnnDataFieldType type = AnnDataFieldType.DENSE_ARRAY;
@@ -250,35 +271,43 @@ class AnnDataUtils {
             type = AnnDataFieldType.CSC_MATRIX;
         }
 
-        writeArray(data, writer, field, path, options, type);
+        writeArray(data, writer, path, options, type);
     }
 
     public static <T extends NativeType<T> & RealType<T>> void writeArray(
             final RandomAccessibleInterval<T> data,
             final N5Writer writer,
-            final AnnDataField field,
             final String path,
+            final N5Options options,
+            final AnnDataFieldType type) throws IOException {
+
+        writeArray(data, writer, AnnDataPath.fromString(path), options, type);
+    }
+
+    public static <T extends NativeType<T> & RealType<T>> void writeArray(
+            final RandomAccessibleInterval<T> data,
+            final N5Writer writer,
+            final AnnDataPath path,
             final N5Options options,
             final AnnDataFieldType type) throws IOException {
 
         AnnDataFieldType.ensureNumericalArray(type);
         final long[] shape = flip(data.dimensionsAsLongArray());
-        final String completePath = field.getPath(path);
-        checker.check(writer, completePath, type, shape);
+        checker.check(writer, path, type, shape);
 
-        if (writer.exists(completePath))
-            throw new IllegalArgumentException("Dataset '" + completePath + "' already exists.");
+        if (writer.exists(path.toString()))
+            throw new IllegalArgumentException("Dataset '" + path + "' already exists.");
 
         try {
             if (type == AnnDataFieldType.DENSE_ARRAY) {
-                N5Utils.save(data, writer, completePath, options.blockSize, options.compression, options.exec);
+                N5Utils.save(data, writer, path.toString(), options.blockSize, options.compression, options.exec);
             } else if (type == AnnDataFieldType.CSR_MATRIX || type == AnnDataFieldType.CSC_MATRIX) {
-                writeSparseArray(writer, field, path, data, options, type);
+                writeSparseArray(writer, path, data, options, type);
             }
-            writeFieldType(writer, completePath, type);
-            conditionallyAddToDataFrame(writer, completePath);
+            writeFieldType(writer, path, type);
+            conditionallyAddToDataFrame(writer, path);
         } catch (final ExecutionException | InterruptedException e) {
-            throw new IOException("Could not write dataset at '" + completePath + "'.", e);
+            throw new IOException("Could not write dataset at '" + path + "'.", e);
         }
     }
 
@@ -291,25 +320,23 @@ class AnnDataUtils {
         throw new IllegalArgumentException("Array must have length 1 or 2.");
     }
 
-    private static void conditionallyAddToDataFrame(final N5Writer writer, final String completePath) {
-        final AnnDataPath path = AnnDataPath.fromString(completePath);
-        final String parent = path.getParentPath();
+    private static void conditionallyAddToDataFrame(final N5Writer writer, final AnnDataPath path) {
+        final AnnDataPath parent = path.getParentPath();
 
-        if (parent.isEmpty() || parent.equals(AnnDataPath.ROOT_CHAR) || !isDataFrame(writer, parent))
+        if (parent == AnnDataPath.ROOT || !isDataFrame(writer, parent))
             return;
 
         final String columnName = path.getLeaf();
         if (! columnName.equals(INDEX_KEY)) {
             final Set<String> existingData = getExistingDataFrameDatasets(writer, parent);
             existingData.add(columnName);
-            writer.setAttribute(parent, COLUMN_ORDER_KEY, existingData.toArray());
+            writer.setAttribute(parent.toString(), COLUMN_ORDER_KEY, existingData.toArray());
         }
     }
 
     private static <T extends NativeType<T> & RealType<T>> void writeSparseArray(
             final N5Writer writer,
-            final AnnDataField field,
-            final String path,
+            final AnnDataPath path,
             final RandomAccessibleInterval<T> data,
             final N5Options options,
             final AnnDataFieldType type) throws ExecutionException, InterruptedException {
@@ -327,85 +354,88 @@ class AnnDataUtils {
             sparse = SparseArray.convertToSparse(data, leadingDim);
         }
 
-        final String completePath = field.getPath(path);
-        writer.createGroup(completePath);
-        final int[] blockSize = (options.blockSize.length == 1) ? options.blockSize : new int[]{options.blockSize[0]*options.blockSize[1]};
-        N5Utils.save(sparse.getDataArray(), writer, completePath + DATA_DIR, blockSize, options.compression, options.exec);
-        N5Utils.save(sparse.getIndicesArray(), writer, completePath + INDICES_DIR, blockSize, options.compression, options.exec);
-        N5Utils.save(sparse.getIndexPointerArray(), writer, completePath + INDPTR_DIR, blockSize, options.compression, options.exec);
+        writer.createGroup(path.toString());
+        final int[] blockSize = (options.blockSize.length == 1) ? options.blockSize : new int[]{options.blockSize[0] * options.blockSize[1]};
+        N5Utils.save(sparse.getDataArray(), writer, path.append(DATA_DIR).toString(), blockSize, options.compression, options.exec);
+        N5Utils.save(sparse.getIndicesArray(), writer, path.append(INDICES_DIR).toString(), blockSize, options.compression, options.exec);
+        N5Utils.save(sparse.getIndexPointerArray(), writer, path.append(INDPTR_DIR).toString(), blockSize, options.compression, options.exec);
 
         final long[] shape = flip(data.dimensionsAsLongArray());
-        writer.setAttribute(completePath, SHAPE_KEY, shape);
+        writer.setAttribute(path.toString(), SHAPE_KEY, shape);
     }
 
-    public static void createDataFrame(final List<String> index, final N5Writer writer, final AnnDataField field, final String path, final N5Options options) {
-        final String completePath = field.getPath(path);
-        checker.check(writer, completePath, AnnDataFieldType.DATA_FRAME, new long[] {index.size(), Integer.MAX_VALUE});
+    public static void createDataFrame(final List<String> index, final N5Writer writer, final String path, final N5Options options) {
+        createDataFrame(index, writer, AnnDataPath.fromString(path), options);
+    }
 
-        writer.createGroup(completePath);
-        writeFieldType(writer, completePath, AnnDataFieldType.DATA_FRAME);
+    public static void createDataFrame(final List<String> index, final N5Writer writer, final AnnDataPath path, final N5Options options) {
+        checker.check(writer, path, AnnDataFieldType.DATA_FRAME, new long[] {index.size(), Integer.MAX_VALUE});
+
+        writer.createGroup(path.toString());
+        writeFieldType(writer, path, AnnDataFieldType.DATA_FRAME);
 
         final boolean isHDF5 = (writer instanceof N5HDF5Reader);
-        writer.setAttribute(completePath, COLUMN_ORDER_KEY, isHDF5 ? "" : new String[0]);
-        writer.setAttribute(completePath, INDEX_KEY, DEFAULT_INDEX_DIR);
+        writer.setAttribute(path.toString(), COLUMN_ORDER_KEY, isHDF5 ? "" : new String[0]);
+        writer.setAttribute(path.toString(), INDEX_KEY, DEFAULT_INDEX_DIR);
 
         final Checker oldChecker = checker;
         setChecker(Checker.NONE);
-        final AnnDataPath indexPath = AnnDataPath.fromString(completePath).append(DEFAULT_INDEX_DIR);
-        writeStringArray(index, writer, field, indexPath.keysAsString(), options, AnnDataFieldType.STRING_ARRAY);
+        writeStringArray(index, writer, path.append(DEFAULT_INDEX_DIR), options, AnnDataFieldType.STRING_ARRAY);
         setChecker(oldChecker);
     }
 
-    public static void writeStringArray(final List<String> data, final N5Writer writer, final AnnDataField field, final String path, final N5Options options, final AnnDataFieldType type) {
-        final String completePath = field.getPath(path);
-        checker.check(writer, completePath, type, new long[] {data.size()});
+    public static void writeStringArray(final List<String> data, final N5Writer writer, final String path, final N5Options options, final AnnDataFieldType type) {
+        writeStringArray(data, writer, AnnDataPath.fromString(path), options, type);
+    }
+
+    public static void writeStringArray(final List<String> data, final N5Writer writer, final AnnDataPath path, final N5Options options, final AnnDataFieldType type) {
+        checker.check(writer, path, type, new long[] {data.size()});
         AnnDataFieldType.ensureStringArray(type);
 
         switch (type) {
             case STRING_ARRAY:
-                N5StringUtils.save(data, writer, completePath, options.blockSize, options.compression);
-                writeFieldType(writer, completePath, type);
+                N5StringUtils.save(data, writer, path.toString(), options.blockSize, options.compression);
+                writeFieldType(writer, path, type);
                 break;
             case CATEGORICAL_ARRAY:
-                writeCategoricalList(data, writer, completePath, options);
+                writeCategoricalList(data, writer, path, options);
         }
-        conditionallyAddToDataFrame(writer, completePath);
+        conditionallyAddToDataFrame(writer, path);
     }
 
-    private static void writeCategoricalList(final List<String> data, final N5Writer writer, final String path, final N5Options options) {
+    private static void writeCategoricalList(final List<String> data, final N5Writer writer, final AnnDataPath path, final N5Options options) {
         final List<String> uniqueElements = data.stream().distinct().collect(Collectors.toList());
         final Map<String, Integer> elementToCode = IntStream.range(0, uniqueElements.size()).boxed().collect(Collectors.toMap(uniqueElements::get, i -> i));
         final Img<IntType> categories = ArrayImgs.ints(data.stream().mapToInt(elementToCode::get).toArray(), data.size());
 
-        writer.createGroup(path);
+        writer.createGroup(path.toString());
         writeFieldType(writer, path, AnnDataFieldType.CATEGORICAL_ARRAY);
-        writer.setAttribute(path, ORDERED_KEY, false);
+        writer.setAttribute(path.toString(), ORDERED_KEY, false);
 
-        final AnnDataPath basePath = AnnDataPath.fromString(path);
-        N5StringUtils.save(uniqueElements, writer, basePath.append(CATEGORIES_DIR).toString(), options.blockSize, options.compression);
-        N5Utils.save(categories, writer, basePath.append(CODES_DIR).toString(), options.blockSize, options.compression);
+        N5StringUtils.save(uniqueElements, writer, path.append(CATEGORIES_DIR).toString(), options.blockSize, options.compression);
+        N5Utils.save(categories, writer, path.append(CODES_DIR).toString(), options.blockSize, options.compression);
     }
 
     public static void createMapping(final N5Writer writer, final String path) {
-        writer.createGroup(path);
+        createMapping(writer, AnnDataPath.fromString(path));
+    }
+
+    public static void createMapping(final N5Writer writer, final AnnDataPath path) {
+        writer.createGroup(path.toString());
         writeFieldType(writer, path, AnnDataFieldType.MAPPING);
     }
 
-    private static boolean isDataFrame(final N5Reader reader, final String path) {
+    private static boolean isDataFrame(final N5Reader reader, final AnnDataPath path) {
         final AnnDataFieldType type = getFieldType(reader, path);
         final AnnDataPath indexPath = getDataFrameIndexPath(reader, path);
         if (indexPath == null) return false;
         return type == AnnDataFieldType.DATA_FRAME && reader.exists(indexPath.toString());
     }
 
-    private static AnnDataPath getDataFrameIndexPath(final N5Reader reader, final String path) {
+    private static AnnDataPath getDataFrameIndexPath(final N5Reader reader, final AnnDataPath path) {
         final String indexDir;
-        try {
-           indexDir = reader.getAttribute(path, INDEX_KEY, String.class);
-        } catch (final Exception e) {
-            return null;
-        }
-		return AnnDataPath.fromString(path).append(indexDir);
+        indexDir = reader.getAttribute(path.toString(), INDEX_KEY, String.class);
+        return path.append(indexDir);
     }
 
 

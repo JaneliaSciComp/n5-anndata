@@ -3,12 +3,14 @@ package org.janelia.n5anndata.datastructures;
 import net.imglib2.Cursor;
 import net.imglib2.Interval;
 import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.integer.LongType;
+import net.imglib2.view.Views;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,31 +52,31 @@ abstract public class SparseArray<
     }
 
     public static <T extends NumericType<T> & NativeType<T>> SparseArray<T, LongType>
-    convertToSparse(final Img<T> img, final int leadingDimension) {
+    convertToSparse(final RandomAccessibleInterval<T> rai, final int leadingDimension) {
         if (leadingDimension != 0 && leadingDimension != 1)
             throw new IllegalArgumentException("Leading dimension in sparse array must be 0 or 1.");
 
-        final T zeroValue = img.getAt(0, 0).copy();
+        final T zeroValue = rai.getAt(0, 0).copy();
         zeroValue.setZero();
 
-        final int nnz = getNumberOfNonzeros(img);
+        final int nnz = getNumberOfNonzeros(rai);
         final int ptrDimension = 1 - leadingDimension;
         final Img<T> data = new ArrayImgFactory<>(zeroValue).create(nnz);
         final Img<LongType> indices = new ArrayImgFactory<>(new LongType()).create(nnz);
-        final Img<LongType> indptr = new ArrayImgFactory<>(new LongType()).create(img.dimension(ptrDimension) + 1);
+        final Img<LongType> indptr = new ArrayImgFactory<>(new LongType()).create(rai.dimension(ptrDimension) + 1);
 
         long count = 0;
         T actualValue;
-        final RandomAccess<T> ra = img.randomAccess();
+        final RandomAccess<T> ra = rai.randomAccess();
         final RandomAccess<T> dataAccess = data.randomAccess();
         final RandomAccess<LongType> indicesAccess = indices.randomAccess();
         final RandomAccess<LongType> indptrAccess = indptr.randomAccess();
         indptrAccess.setPosition(0,0);
         indptrAccess.get().setLong(0L);
 
-        for (long j = 0; j < img.dimension(ptrDimension); j++) {
+        for (long j = 0; j < rai.dimension(ptrDimension); j++) {
             ra.setPosition(j, ptrDimension);
-            for (long i = 0; i < img.dimension(leadingDimension); i++) {
+            for (long i = 0; i < rai.dimension(leadingDimension); i++) {
                 ra.setPosition(i, leadingDimension);
                 actualValue = ra.get();
                 if (!actualValue.valueEquals(zeroValue)) {
@@ -89,16 +91,16 @@ abstract public class SparseArray<
             indptrAccess.get().setLong(count);
         }
 
-        return (leadingDimension == 0) ? new CsrArray<>(img.dimension(0), img.dimension(1), data, indices, indptr)
-            : new CscArray<>(img.dimension(0), img.dimension(1), data, indices, indptr);
+        return (leadingDimension == 0) ? new CsrArray<>(rai.dimension(0), rai.dimension(1), data, indices, indptr)
+            : new CscArray<>(rai.dimension(0), rai.dimension(1), data, indices, indptr);
     }
 
-    public static <T extends NumericType<T>> int getNumberOfNonzeros(final Img<T> img) {
-        final T zeroValue = img.getAt(0, 0).copy();
+    public static <T extends NumericType<T>> int getNumberOfNonzeros(final RandomAccessibleInterval<T> rai) {
+        final T zeroValue = rai.getAt(0, 0).copy();
         zeroValue.setZero();
 
         int nnz = 0;
-        for (final T pixel : img)
+        for (final T pixel : Views.iterable(rai))
             if (!pixel.valueEquals(zeroValue))
                 ++nnz;
         return nnz;

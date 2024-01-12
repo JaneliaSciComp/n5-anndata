@@ -2,6 +2,7 @@ package org.janelia.n5anndata.io;
 
 import ch.systemsx.cisd.hdf5.HDF5Factory;
 import ch.systemsx.cisd.hdf5.IHDF5Reader;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.NativeType;
@@ -248,7 +249,7 @@ class AnnDataUtils {
     }
 
     public static <T extends NativeType<T> & RealType<T>> void writeArray(
-            final Img<T> data,
+            final RandomAccessibleInterval<T> data,
             final N5Writer writer,
             final AnnDataField field,
             final String path,
@@ -302,7 +303,7 @@ class AnnDataUtils {
             final N5Writer writer,
             final AnnDataField field,
             final String path,
-            final Img<T> data,
+            final RandomAccessibleInterval<T> data,
             final N5Options options,
             final AnnDataFieldType type) throws ExecutionException, InterruptedException {
 

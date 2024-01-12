@@ -19,11 +19,15 @@ public class AnnDataPath {
 		return field;
 	}
 
+	public String getSubPath() {
+		return String.join(SEPARATOR, subPaths);
+	}
+
 	public String toString() {
 		if (subPaths.length == 0) {
 			return ROOT + field.toString();
 		} else {
-			return ROOT + field.getPath(String.join(SEPARATOR, subPaths));
+			return ROOT + field.getPath(getSubPath());
 		}
 	}
 
@@ -33,7 +37,7 @@ public class AnnDataPath {
 		} else if (subPaths.length == 1) {
 			return ROOT + field.toString();
 		} else {
-			return ROOT + field.getPath(String.join(SEPARATOR, Arrays.copyOfRange(subPaths, 0, subPaths.length - 1)));
+			return new AnnDataPath(field, Arrays.copyOfRange(subPaths, 0, subPaths.length - 1)).toString();
 		}
 	}
 

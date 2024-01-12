@@ -24,11 +24,12 @@ public class AnnDataPathTest {
 	}
 
 	@Test
-	public void correct_field_leaf_and_parent() {
+	public void correct_path_parts() {
 		final String expectedParentPath = "/obs/test/foo/bar";
 		final AnnDataPath actualPath = AnnDataPath.fromString(expectedParentPath);
 		assertEquals(AnnDataField.OBS, actualPath.getField());
 		assertEquals("bar", actualPath.getLeaf());
+		assertEquals("test/foo/bar", actualPath.getSubPath());
 		assertEquals("/obs/test/foo", actualPath.getParentPath());
 	}
 
@@ -38,6 +39,7 @@ public class AnnDataPathTest {
 		final AnnDataPath actualPath = AnnDataPath.fromString(expectedParentPath);
 		assertEquals(AnnDataField.OBS, actualPath.getField());
 		assertEquals(AnnDataField.OBS.getPath(), actualPath.getLeaf());
+		assertEquals("", actualPath.getSubPath());
 		assertEquals(AnnDataPath.ROOT, actualPath.getParentPath());
 	}
 

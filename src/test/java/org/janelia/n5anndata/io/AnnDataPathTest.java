@@ -40,7 +40,7 @@ public class AnnDataPathTest {
 		assertEquals(AnnDataField.OBS, actualPath.getField());
 		assertEquals(AnnDataField.OBS.getPath(), actualPath.getLeaf());
 		assertEquals("", actualPath.keysAsString());
-		assertEquals(AnnDataPath.ROOT, actualPath.getParentPath());
+		assertEquals(AnnDataPath.ROOT_CHAR, actualPath.getParentPath());
 	}
 
 	@Test

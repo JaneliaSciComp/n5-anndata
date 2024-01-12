@@ -69,12 +69,12 @@ class AnnDataUtils {
         final Checker oldChecker = checker;
         setChecker(Checker.NONE);
 
-        if (writer.list(AnnDataPath.ROOT).length > 0) {
+        if (writer.list(AnnDataPath.ROOT_CHAR).length > 0) {
             throw new AnnDataException("Cannot initialize AnnData: target container is not empty.");
         }
 
-        writer.createGroup(AnnDataPath.ROOT);
-        writeFieldType(writer, AnnDataPath.ROOT, AnnDataFieldType.ANNDATA);
+        writer.createGroup(AnnDataPath.ROOT_CHAR);
+        writeFieldType(writer, AnnDataPath.ROOT_CHAR, AnnDataFieldType.ANNDATA);
 
         createDataFrame(obsNames, writer, AnnDataField.OBS, "", obsOptions);
         createDataFrame(varNames, writer, AnnDataField.VAR, "", varOptions);
@@ -99,7 +99,7 @@ class AnnDataUtils {
     // TODO: check metadata for all fields
     public static boolean isValidAnnData(final N5Reader reader) {
         try {
-            return getFieldType(reader, AnnDataPath.ROOT).equals(AnnDataFieldType.ANNDATA)
+            return getFieldType(reader, AnnDataPath.ROOT_CHAR).equals(AnnDataFieldType.ANNDATA)
                     && reader.exists(AnnDataField.OBS.getPath()) && isDataFrame(reader, AnnDataField.OBS.getPath())
                     && reader.exists(AnnDataField.VAR.getPath()) && isDataFrame(reader, AnnDataField.VAR.getPath())
                     && reader.exists(AnnDataField.LAYERS.getPath()) && getFieldType(reader, AnnDataField.LAYERS.getPath()).equals(AnnDataFieldType.MAPPING)
@@ -295,7 +295,7 @@ class AnnDataUtils {
         final AnnDataPath path = AnnDataPath.fromString(completePath);
         final String parent = path.getParentPath();
 
-        if (parent.isEmpty() || parent.equals(AnnDataPath.ROOT) || !isDataFrame(writer, parent))
+        if (parent.isEmpty() || parent.equals(AnnDataPath.ROOT_CHAR) || !isDataFrame(writer, parent))
             return;
 
         final String columnName = path.getLeaf();

@@ -6,7 +6,8 @@ import java.util.List;
 
 public class AnnDataPath {
 
-	public static final String ROOT = "/";
+	public static final AnnDataPath ROOT = new AnnDataRootPath();
+	public static final String ROOT_CHAR = "/";
 	private static final String SEPARATOR = "/";
 
 	private final AnnDataField field;
@@ -31,15 +32,15 @@ public class AnnDataPath {
 
 	public String toString() {
 		if (keys.isEmpty()) {
-			return ROOT + field.toString();
+			return ROOT.toString() + field.toString();
 		} else {
-			return ROOT + field.toString() + SEPARATOR + keysAsString();
+			return ROOT.toString() + field.toString() + SEPARATOR + keysAsString();
 		}
 	}
 
 	public String getParentPath() {
 		if (keys.isEmpty()) {
-			return ROOT;
+			return ROOT_CHAR;
 		} else {
 			return new AnnDataPath(field, keys.subList(0, keys.size() - 1)).toString();
 		}
@@ -67,6 +68,10 @@ public class AnnDataPath {
 		if (path == null || path.isEmpty())
 			throw new IllegalArgumentException("Invalid path: " + path);
 
+		if (path.trim().equals(ROOT.toString())) {
+			return ROOT;
+		}
+
 		final String normalizedPath = withoutLeadingRoot(path);
 		final String[] parts = normalizedPath.split(SEPARATOR);
 		if (parts.length < 1)
@@ -78,6 +83,43 @@ public class AnnDataPath {
 	}
 
 	private static String withoutLeadingRoot(final String path) {
-		return path.startsWith(ROOT) ? path.substring(1) : path;
+		return path.startsWith(ROOT.toString()) ? path.substring(1) : path;
+	}
+
+
+	private static class AnnDataRootPath extends AnnDataPath {
+		public AnnDataRootPath() {
+			super(null, new ArrayList<>());
+		}
+
+		@Override
+		public AnnDataField getField() {
+			throw new UnsupportedOperationException("Root path has no field");
+		}
+
+		@Override
+		public String keysAsString() {
+			throw new UnsupportedOperationException("Root path has no keys");
+		}
+
+		@Override
+		public String toString() {
+			return ROOT_CHAR;
+		}
+
+		@Override
+		public String getParentPath() {
+			throw new UnsupportedOperationException("Root path has no parent");
+		}
+
+		@Override
+		public String getLeaf() {
+			return ROOT_CHAR;
+		}
+
+		@Override
+		public AnnDataPath append(final List<String> additionalKeys) {
+			throw new UnsupportedOperationException("Cannot append keys to root path");
+		}
 	}
 }

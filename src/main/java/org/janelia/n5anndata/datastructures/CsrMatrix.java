@@ -3,11 +3,13 @@ package org.janelia.n5anndata.datastructures;
 import net.imglib2.Cursor;
 import net.imglib2.Interval;
 import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
+import net.imglib2.type.numeric.integer.LongType;
 
 public class CsrMatrix<
 	T extends NumericType<T> & NativeType<T>,
@@ -28,11 +30,6 @@ public class CsrMatrix<
 	}
 
 	@Override
-	public RowMajorIterationOrder2D iterationOrder() {
-		return new RowMajorIterationOrder2D(this);
-	}
-
-	@Override
 	public CsrMatrix<T,I> copy() {
 		final Img<T> dataCopy = data.copy();
 		final Img<I> indicesCopy = indices.copy();
@@ -44,6 +41,17 @@ public class CsrMatrix<
 	public ImgFactory<T> factory() {
 		return new SparseArrayFactory<>(data.getAt(0), indices.getAt(0), 0);
 	}
+
+	public static <T extends NumericType<T> & NativeType<T>>
+	SparseArray<T, LongType> from(final RandomAccessibleInterval<T> rai) {
+		return convertToSparse(rai, 0);
+	}
+
+	@Override
+	public RowMajorIterationOrder2D iterationOrder() {
+		return new RowMajorIterationOrder2D(this);
+	}
+
 
 	/**
 	 * An iteration order that scans a 2D image in row-major order.

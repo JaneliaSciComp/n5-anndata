@@ -321,8 +321,11 @@ public class AnnDataUtils {
         if (typeFitsData) {
            sparse = (SparseArray<T, ?>) data;
         } else {
-            final int leadingDim = (type == AnnDataFieldType.CSR_MATRIX) ? 0 : 1;
-            sparse = SparseArray.convertToSparse(data, leadingDim);
+            if (type == AnnDataFieldType.CSR_MATRIX) {
+                sparse = CsrMatrix.from(data);
+            } else {
+                sparse = CscMatrix.from(data);
+            }
         }
 
         writer.createGroup(path.toString());

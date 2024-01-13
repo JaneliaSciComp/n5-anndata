@@ -12,7 +12,6 @@ import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
 import org.janelia.n5anndata.datastructures.CscMatrix;
 import org.janelia.n5anndata.datastructures.CsrMatrix;
-import org.janelia.n5anndata.datastructures.SparseArray;
 import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.GzipCompression;
@@ -157,7 +156,7 @@ public class IoTest {
 	@MethodSource("datasetsWithDifferentBackends")
 	public void write_csr_as_csc_in_obsm(final Supplier<N5Writer> writerSupplier) {
 		final AnnDataPath path = new AnnDataPath(AnnDataField.OBSM, "test");
-		final Img<DoubleType> csr = SparseArray.convertToSparse(MATRIX, 0);
+		final Img<DoubleType> csr = CsrMatrix.from(MATRIX);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			AnnDataUtils.writeNumericalArray(csr, writer, path, MATRIX_OPTIONS, AnnDataFieldType.CSC_MATRIX);
@@ -173,7 +172,7 @@ public class IoTest {
 	@MethodSource("datasetsWithDifferentBackends")
 	public void write_csc_as_dense_in_layers(final Supplier<N5Writer> writerSupplier) {
 		final AnnDataPath path = new AnnDataPath(AnnDataField.LAYERS, "test");
-		final Img<DoubleType> csc = SparseArray.convertToSparse(MATRIX, 1);
+		final Img<DoubleType> csc = CscMatrix.from(MATRIX);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			AnnDataUtils.writeNumericalArray(csc, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);

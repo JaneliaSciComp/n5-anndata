@@ -95,7 +95,6 @@ public class AnnDataUtils {
         initializeAnnData(obsNames, options, varNames, options, writer);
     }
 
-    // TODO: check metadata for all fields
     public static boolean isValidAnnData(final N5Reader reader) {
         try {
             return getFieldType(reader, AnnDataPath.ROOT).equals(AnnDataFieldType.ANNDATA)

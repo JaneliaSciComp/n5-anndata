@@ -10,6 +10,7 @@ import net.imglib2.type.numeric.integer.IntType;
 import org.janelia.n5anndata.datastructures.CscMatrix;
 import org.janelia.n5anndata.datastructures.CsrMatrix;
 import org.janelia.n5anndata.datastructures.SparseArray;
+import org.janelia.n5anndata.io.constraints.Checker;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
-class AnnDataUtils {
+public class AnnDataUtils {
 
     // encoding metadata
     private static final String ENCODING_KEY = "encoding-type";

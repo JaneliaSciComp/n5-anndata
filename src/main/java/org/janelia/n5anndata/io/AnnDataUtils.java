@@ -1,7 +1,5 @@
 package org.janelia.n5anndata.io;
 
-import ch.systemsx.cisd.hdf5.HDF5Factory;
-import ch.systemsx.cisd.hdf5.IHDF5Reader;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -9,7 +7,6 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import org.checkerframework.checker.units.qual.A;
 import org.janelia.n5anndata.datastructures.CscMatrix;
 import org.janelia.n5anndata.datastructures.CsrMatrix;
 import org.janelia.n5anndata.datastructures.SparseArray;
@@ -75,7 +72,7 @@ class AnnDataUtils {
         }
 
         writer.createGroup(AnnDataPath.ROOT.toString());
-        writeFieldType(writer, AnnDataPath.ROOT, AnnDataFieldType.ANNDATA);
+        setFieldType(writer, AnnDataPath.ROOT, AnnDataFieldType.ANNDATA);
 
         createDataFrame(obsNames, writer, new AnnDataPath(AnnDataField.OBS), obsOptions);
         createDataFrame(varNames, writer, new AnnDataPath(AnnDataField.VAR), varOptions);
@@ -151,7 +148,7 @@ class AnnDataUtils {
         return AnnDataFieldType.fromString(encoding, version);
     }
 
-    public static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
+    public static <T extends NativeType<T> & RealType<T>>
     Img<T> readNumericalArray(final N5Reader reader, final String path) {
         return readNumericalArray(reader, AnnDataPath.fromString(path));
     }
@@ -166,16 +163,16 @@ class AnnDataUtils {
             case DENSE_ARRAY:
                 return N5Utils.open(reader, path.toString());
             case CSR_MATRIX:
-                return openSparseArray(reader, path, CsrMatrix<T,I>::new); // row
+                return readSparseArray(reader, path, CsrMatrix<T,I>::new); // row
             case CSC_MATRIX:
-                return openSparseArray(reader, path, CscMatrix<T,I>::new); // column
+                return readSparseArray(reader, path, CscMatrix<T,I>::new); // column
             default:
                 throw new UnsupportedOperationException("Reading numerical array data from " + type + " not supported.");
         }
     }
 
     private static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
-    SparseArray<T, I> openSparseArray(
+    SparseArray<T, I> readSparseArray(
             final N5Reader reader,
             final AnnDataPath path,
             final SparseArrayConstructor<T, I> constructor) {
@@ -204,16 +201,11 @@ class AnnDataUtils {
         }
     }
 
-    private static String[] readPrimitiveStringArray(final N5HDF5Reader reader, final String path) {
-        final IHDF5Reader hdf5Reader = HDF5Factory.openForReading(reader.getFilename());
-        return hdf5Reader.readStringArray(path);
+    public static Set<String> getDataFrameDatasetNames(final N5Reader reader, final String path) {
+        return getDataFrameDatasetNames(reader, AnnDataPath.fromString(path));
     }
 
-    public static Set<String> getExistingDataFrameDatasets(final N5Reader reader, final String path) {
-        return getExistingDataFrameDatasets(reader, AnnDataPath.fromString(path));
-    }
-
-    public static Set<String> getExistingDataFrameDatasets(final N5Reader reader, final AnnDataPath path) {
+    public static Set<String> getDataFrameDatasetNames(final N5Reader reader, final AnnDataPath path) {
         if (!reader.exists(path.toString())) {
             return new HashSet<>();
         }
@@ -243,48 +235,22 @@ class AnnDataUtils {
         return denormalizedNames;
     }
 
-    private static void writeFieldType(final N5Writer writer, final AnnDataPath path, final AnnDataFieldType type) {
+    private static void setFieldType(final N5Writer writer, final AnnDataPath path, final AnnDataFieldType type) {
         writer.setAttribute(path.toString(), ENCODING_KEY, type.getEncoding());
         writer.setAttribute(path.toString(), VERSION_KEY, type.getVersion());
     }
 
-    public static <T extends NativeType<T> & RealType<T>> void writeArray(
-            final Img<T> data,
-            final N5Writer writer,
-            final String path,
-            final N5Options options) throws IOException {
-
-        writeArray(data, writer, AnnDataPath.fromString(path), options);
-    }
-
-    public static <T extends NativeType<T> & RealType<T>> void writeArray(
-            final Img<T> data,
-            final N5Writer writer,
-            final AnnDataPath path,
-            final N5Options options) throws IOException {
-
-        AnnDataFieldType type = AnnDataFieldType.DENSE_ARRAY;
-        if (data instanceof CsrMatrix) {
-            type = AnnDataFieldType.CSR_MATRIX;
-        }
-        if (data instanceof CscMatrix) {
-            type = AnnDataFieldType.CSC_MATRIX;
-        }
-
-        writeArray(data, writer, path, options, type);
-    }
-
-    public static <T extends NativeType<T> & RealType<T>> void writeArray(
+    public static <T extends NativeType<T> & RealType<T>> void writeNumericalArray(
             final RandomAccessibleInterval<T> data,
             final N5Writer writer,
             final String path,
             final N5Options options,
             final AnnDataFieldType type) throws IOException {
 
-        writeArray(data, writer, AnnDataPath.fromString(path), options, type);
+        writeNumericalArray(data, writer, AnnDataPath.fromString(path), options, type);
     }
 
-    public static <T extends NativeType<T> & RealType<T>> void writeArray(
+    public static <T extends NativeType<T> & RealType<T>> void writeNumericalArray(
             final RandomAccessibleInterval<T> data,
             final N5Writer writer,
             final AnnDataPath path,
@@ -304,7 +270,7 @@ class AnnDataUtils {
             } else if (type == AnnDataFieldType.CSR_MATRIX || type == AnnDataFieldType.CSC_MATRIX) {
                 writeSparseArray(writer, path, data, options, type);
             }
-            writeFieldType(writer, path, type);
+            setFieldType(writer, path, type);
             conditionallyAddToDataFrame(writer, path);
         } catch (final ExecutionException | InterruptedException e) {
             throw new IOException("Could not write dataset at '" + path + "'.", e);
@@ -328,7 +294,7 @@ class AnnDataUtils {
 
         final String columnName = path.getLeaf();
         if (! columnName.equals(INDEX_KEY)) {
-            final Set<String> existingData = getExistingDataFrameDatasets(writer, parent);
+            final Set<String> existingData = getDataFrameDatasetNames(writer, parent);
             existingData.add(columnName);
             writer.setAttribute(parent.toString(), COLUMN_ORDER_KEY, existingData.toArray());
         }
@@ -372,7 +338,7 @@ class AnnDataUtils {
         checker.check(writer, path, AnnDataFieldType.DATA_FRAME, new long[] {index.size(), Integer.MAX_VALUE});
 
         writer.createGroup(path.toString());
-        writeFieldType(writer, path, AnnDataFieldType.DATA_FRAME);
+        setFieldType(writer, path, AnnDataFieldType.DATA_FRAME);
 
         final boolean isHDF5 = (writer instanceof N5HDF5Reader);
         writer.setAttribute(path.toString(), COLUMN_ORDER_KEY, isHDF5 ? "" : new String[0]);
@@ -395,7 +361,7 @@ class AnnDataUtils {
         switch (type) {
             case STRING_ARRAY:
                 N5StringUtils.save(data, writer, path.toString(), options.blockSize, options.compression);
-                writeFieldType(writer, path, type);
+                setFieldType(writer, path, type);
                 break;
             case CATEGORICAL_ARRAY:
                 writeCategoricalList(data, writer, path, options);
@@ -409,7 +375,7 @@ class AnnDataUtils {
         final Img<IntType> categories = ArrayImgs.ints(data.stream().mapToInt(elementToCode::get).toArray(), data.size());
 
         writer.createGroup(path.toString());
-        writeFieldType(writer, path, AnnDataFieldType.CATEGORICAL_ARRAY);
+        setFieldType(writer, path, AnnDataFieldType.CATEGORICAL_ARRAY);
         writer.setAttribute(path.toString(), ORDERED_KEY, false);
 
         N5StringUtils.save(uniqueElements, writer, path.append(CATEGORIES_DIR).toString(), options.blockSize, options.compression);
@@ -422,7 +388,7 @@ class AnnDataUtils {
 
     public static void createMapping(final N5Writer writer, final AnnDataPath path) {
         writer.createGroup(path.toString());
-        writeFieldType(writer, path, AnnDataFieldType.MAPPING);
+        setFieldType(writer, path, AnnDataFieldType.MAPPING);
     }
 
     private static boolean isDataFrame(final N5Reader reader, final AnnDataPath path) {

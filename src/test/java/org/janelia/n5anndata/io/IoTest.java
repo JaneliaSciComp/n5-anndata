@@ -10,7 +10,6 @@ import net.imglib2.type.numeric.integer.ShortType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
-import org.checkerframework.checker.units.qual.A;
 import org.janelia.n5anndata.datastructures.CscMatrix;
 import org.janelia.n5anndata.datastructures.CsrMatrix;
 import org.janelia.n5anndata.datastructures.SparseArray;
@@ -130,7 +129,7 @@ public class IoTest {
 		final AnnDataPath path = new AnnDataPath(AnnDataField.X);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			AnnDataUtils.writeArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			AnnDataUtils.writeNumericalArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertEquals(MATRIX, actual);
 		} catch (final Exception e) {
@@ -145,7 +144,7 @@ public class IoTest {
 		final RandomAccessibleInterval<DoubleType> transposed = Views.permute(MATRIX, 1, 0);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			AnnDataUtils.writeArray(transposed, writer, path, MATRIX_OPTIONS, AnnDataFieldType.CSR_MATRIX);
+			AnnDataUtils.writeNumericalArray(transposed, writer, path, MATRIX_OPTIONS, AnnDataFieldType.CSR_MATRIX);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertInstanceOf(CsrMatrix.class, actual);
 			assertEquals(transposed, actual);
@@ -161,7 +160,7 @@ public class IoTest {
 		final Img<DoubleType> csr = SparseArray.convertToSparse(MATRIX, 0);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			AnnDataUtils.writeArray(csr, writer, path, MATRIX_OPTIONS, AnnDataFieldType.CSC_MATRIX);
+			AnnDataUtils.writeNumericalArray(csr, writer, path, MATRIX_OPTIONS, AnnDataFieldType.CSC_MATRIX);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertInstanceOf(CscMatrix.class, actual);
 			assertEquals(MATRIX, actual);
@@ -177,7 +176,7 @@ public class IoTest {
 		final Img<DoubleType> csc = SparseArray.convertToSparse(MATRIX, 1);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			AnnDataUtils.writeArray(csc, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			AnnDataUtils.writeNumericalArray(csc, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			Assertions.assertEquals(AnnDataUtils.getFieldType(writer, path), AnnDataFieldType.DENSE_ARRAY);
 			assertEquals(MATRIX, actual);
@@ -193,7 +192,7 @@ public class IoTest {
 		final Img<FloatType> expected = ArrayImgs.floats(new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 4, 4);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			AnnDataUtils.writeArray(expected, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			AnnDataUtils.writeNumericalArray(expected, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<FloatType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertEquals(expected, actual);
 		} catch (final Exception e) {
@@ -208,7 +207,7 @@ public class IoTest {
 		final Img<ShortType> expected = ArrayImgs.shorts(new short[] {1, 2, 3, 4, 5, 6, 7, 8, 9}, 3, 3);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
-			AnnDataUtils.writeArray(expected, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			AnnDataUtils.writeNumericalArray(expected, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<ShortType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertEquals(expected, actual);
 		} catch (final Exception e) {
@@ -255,7 +254,7 @@ public class IoTest {
 				AnnDataUtils.createMapping(writer, path);
 			}
 			path = path.append("test3");
-			AnnDataUtils.writeArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			AnnDataUtils.writeNumericalArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertEquals(MATRIX, actual);
 		} catch (final Exception e) {
@@ -276,7 +275,7 @@ public class IoTest {
 			assertIterableEquals(OBS_NAMES, actualIndex);
 			final List<String> actualData = AnnDataUtils.readStringArray(writer, datasetPath);
 			assertIterableEquals(OBS_NAMES, actualData);
-			final Set<String> datasets = AnnDataUtils.getExistingDataFrameDatasets(writer, path);
+			final Set<String> datasets = AnnDataUtils.getDataFrameDatasetNames(writer, path);
 			assertIterableEquals(Collections.singletonList("data"), datasets);
 		} catch (final Exception e) {
 			fail("Could not write / read file: ", e);
@@ -335,17 +334,17 @@ public class IoTest {
 		AnnDataPath path = new AnnDataPath(AnnDataField.X);
 		final Img<DoubleType> X = AnnDataUtils.readNumericalArray(reader, path);
 		N5Options options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(X, writer, path, options, AnnDataFieldType.CSR_MATRIX);
+		AnnDataUtils.writeNumericalArray(X, writer, path, options, AnnDataFieldType.CSR_MATRIX);
 
 		path = new AnnDataPath(AnnDataField.OBSP, "rnd");
 		final Img<DoubleType> csr = AnnDataUtils.readNumericalArray(reader, path);
 		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(csr, writer, path, options, AnnDataFieldType.CSR_MATRIX);
+		AnnDataUtils.writeNumericalArray(csr, writer, path, options, AnnDataFieldType.CSR_MATRIX);
 
 		path = new AnnDataPath(AnnDataField.VARP, "rnd");
 		final Img<ShortType> csc = AnnDataUtils.readNumericalArray(reader, path);
 		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(csc, writer, path, options, AnnDataFieldType.CSC_MATRIX);
+		AnnDataUtils.writeNumericalArray(csc, writer, path, options, AnnDataFieldType.CSC_MATRIX);
 
 		path = new AnnDataPath(AnnDataField.OBS, "_index");
 		final List<String> obs_names = AnnDataUtils.readStringArray(reader, path);
@@ -365,32 +364,32 @@ public class IoTest {
 		path = new AnnDataPath(AnnDataField.VAR, "gene_stuff1");
 		final Img<IntType> genes1 = AnnDataUtils.readNumericalArray(reader, path);
 		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(genes1, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
+		AnnDataUtils.writeNumericalArray(genes1, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
 
 		path = new AnnDataPath(AnnDataField.VAR, "gene_stuff2");
 		final Img<LongType> genes2 = AnnDataUtils.readNumericalArray(reader, path);
 		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(genes2, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
+		AnnDataUtils.writeNumericalArray(genes2, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
 
 		path = new AnnDataPath(AnnDataField.OBS, "X_umap");
 		final Img<DoubleType> umap1 = AnnDataUtils.readNumericalArray(reader, path);
 		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(umap1, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
+		AnnDataUtils.writeNumericalArray(umap1, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
 
 		path = new AnnDataPath(AnnDataField.VARM, "X_umap");
 		final Img<DoubleType> umap2 = AnnDataUtils.readNumericalArray(reader, path);
 		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(umap2, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
+		AnnDataUtils.writeNumericalArray(umap2, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
 
 		path = new AnnDataPath(AnnDataField.UNS, "random");
 		final Img<DoubleType> uns = AnnDataUtils.readNumericalArray(reader, path);
 		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(uns, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
+		AnnDataUtils.writeNumericalArray(uns, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
 
 		path = new AnnDataPath(AnnDataField.LAYERS, "log");
 		final Img<FloatType> log = AnnDataUtils.readNumericalArray(reader, path);
 		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeArray(log, writer, path, options, AnnDataFieldType.CSR_MATRIX);
+		AnnDataUtils.writeNumericalArray(log, writer, path, options, AnnDataFieldType.CSR_MATRIX);
 	}
 
 	private static N5Reader getReaderFor(final String dataset) {

@@ -267,7 +267,11 @@ public class AnnDataUtils {
 
         try {
             if (type == AnnDataFieldType.DENSE_ARRAY) {
-                N5Utils.save(data, writer, path.toString(), options.blockSize, options.compression, options.exec);
+                if (options.exec == null) {
+                    N5Utils.save(data, writer, path.toString(), options.blockSize, options.compression);
+                } else {
+                    N5Utils.save(data, writer, path.toString(), options.blockSize, options.compression, options.exec);
+                }
             } else if (type == AnnDataFieldType.CSR_MATRIX || type == AnnDataFieldType.CSC_MATRIX) {
                 writeSparseArray(writer, path, data, options, type);
             }
@@ -323,9 +327,15 @@ public class AnnDataUtils {
 
         writer.createGroup(path.toString());
         final int[] blockSize = (options.blockSize.length == 1) ? options.blockSize : new int[]{options.blockSize[0] * options.blockSize[1]};
-        N5Utils.save(sparse.getDataArray(), writer, path.append(DATA_DIR).toString(), blockSize, options.compression, options.exec);
-        N5Utils.save(sparse.getIndicesArray(), writer, path.append(INDICES_DIR).toString(), blockSize, options.compression, options.exec);
-        N5Utils.save(sparse.getIndexPointerArray(), writer, path.append(INDPTR_DIR).toString(), blockSize, options.compression, options.exec);
+        if (options.exec == null) {
+            N5Utils.save(sparse.getDataArray(), writer, path.append(DATA_DIR).toString(), blockSize, options.compression);
+            N5Utils.save(sparse.getIndicesArray(), writer, path.append(INDICES_DIR).toString(), blockSize, options.compression);
+            N5Utils.save(sparse.getIndexPointerArray(), writer, path.append(INDPTR_DIR).toString(), blockSize, options.compression);
+        } else {
+            N5Utils.save(sparse.getDataArray(), writer, path.append(DATA_DIR).toString(), blockSize, options.compression, options.exec);
+            N5Utils.save(sparse.getIndicesArray(), writer, path.append(INDICES_DIR).toString(), blockSize, options.compression, options.exec);
+            N5Utils.save(sparse.getIndexPointerArray(), writer, path.append(INDPTR_DIR).toString(), blockSize, options.compression, options.exec);
+        }
 
         final long[] shape = flip(data.dimensionsAsLongArray());
         writer.setAttribute(path.toString(), SHAPE_KEY, shape);

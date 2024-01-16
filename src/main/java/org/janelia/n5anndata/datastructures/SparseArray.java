@@ -15,6 +15,19 @@ import net.imglib2.view.Views;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Abstract class representing a sparse array in the compressed storage format.
+ * A sparse array is a data structure that efficiently stores only non-zero values.
+ * This implementation is a generalization of the Compressed Sparse Row (CSR) and
+ * Compressed Sparse Column (CSC) formats. The CSR and CSC only differ in how the
+ * elements are accessed, which is handled by the respective subclasses.
+ * This class implements {@link Img} for use with ImgLib2.
+ *
+ * @param <T> the type of the data values in the sparse array
+ * @param <I> the type of the indices in the sparse array
+ *
+ * @author Michael Innerberger
+ */
 abstract public class SparseArray<
         T extends NumericType<T> & NativeType<T>,
         I extends IntegerType<I> & NativeType<I>> implements Img<T> {
@@ -24,6 +37,15 @@ abstract public class SparseArray<
     protected final Img<I> indices;
     protected final Img<I> indptr;
 
+    /**
+     * Constructor for the SparseArray class.
+     *
+     * @param numCols the number of columns
+     * @param numRows the number of rows
+     * @param data the data values
+     * @param indices the indices of the non-zero data values of the leading dimension
+     * @param indptr the index pointers for where a new slice of the leading dimension starts in indices
+     */
     public SparseArray(
             final long numCols,
             final long numRows,
@@ -46,6 +68,15 @@ abstract public class SparseArray<
             throw new IllegalArgumentException("Indptr array does not fit number of slices.");
     }
 
+    /**
+     * Converts a given RandomAccessibleInterval into a SparseArray by only storing non-zero values.
+     * The leading dimension determines whether the sparse array is in CSR (0) or CSC (1) format.
+     *
+     * @param rai the RandomAccessibleInterval to be converted
+     * @param leadingDimension the leading dimension (0 for CSR, 1 for CSC)
+     * @return a SparseArray representing the given RandomAccessibleInterval
+     * @throws IllegalArgumentException if the leading dimension is not 0 or 1
+     */
     protected static <T extends NumericType<T> & NativeType<T>> SparseArray<T, LongType>
     convertToSparse(final RandomAccessibleInterval<T> rai, final int leadingDimension) {
         if (leadingDimension != 0 && leadingDimension != 1)
@@ -90,6 +121,13 @@ abstract public class SparseArray<
             : new CscMatrix<>(rai.dimension(0), rai.dimension(1), data, indices, indptr);
     }
 
+    /**
+     * Returns the number of non-zero values in a given RandomAccessibleInterval
+     * by iterating over all entries.
+     *
+     * @param rai the RandomAccessibleInterval to be checked
+     * @return the number of non-zero values
+     */
     public static <T extends NumericType<T>> int getNumberOfNonzeros(final RandomAccessibleInterval<T> rai) {
         final T zeroValue = rai.getAt(0, 0).copy();
         zeroValue.setZero();
@@ -121,14 +159,31 @@ abstract public class SparseArray<
         return randomAccess();
     }
 
+    /**
+     * Returns the data array of the sparse array.
+     *
+     * @return the data array
+     */
     public Img<T> getDataArray() {
         return data;
     }
 
+
+    /**
+     * Returns the indices array of the sparse array.
+     *
+     * @return the indices array
+     */
     public Img<I> getIndicesArray() {
         return indices;
     }
 
+
+    /**
+     * Returns the index pointer array of the sparse array.
+     *
+     * @return the index pointer array
+     */
     public Img<I> getIndexPointerArray() {
         return indptr;
     }
@@ -144,7 +199,8 @@ abstract public class SparseArray<
     }
 
     /**
-     * Checks if two intervals have the same iteration space.
+     * Checks if two intervals have the same iteration space, i.e., if the matrix
+     * indices are the same.
      *
      * @param a One interval
      * @param b Other interval
@@ -167,6 +223,12 @@ abstract public class SparseArray<
         return true;
     }
 
+    /**
+     * Returns a list of non-singleton dimensions for a given interval.
+     *
+     * @param interval the interval to be checked
+     * @return a list of non-singleton dimensions for the given interval
+     */
     protected static List<Integer> nonSingletonDimensions(final Interval interval) {
         final List<Integer> nonSingletonDim = new ArrayList<>();
         for (int i = 0; i < interval.numDimensions(); i++)

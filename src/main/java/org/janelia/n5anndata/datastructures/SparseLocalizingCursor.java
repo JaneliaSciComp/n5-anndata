@@ -7,6 +7,16 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 
+/**
+ * Cursor for a SparseArray.
+ * Access for CSR and CSC matrices is almost the same, except for
+ * the leading dimension (i.e., if the indices array represents row
+ * or column indices).
+ *
+ * @param <T> the type of the data values in the SparseArray
+ *
+ * @author Michael Innerberger
+ */
 public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> extends AbstractLocalizingCursor<T> {
 
 	private final long[] max;
@@ -22,10 +32,18 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 	private final RandomAccess<? extends IntegerType<?>> indptrAccess;
 
 
+	/**
+	 * Constructor for the SparseLocalizingCursor class.
+	 * This cursor should not be used directly, but rather the
+	 * {@link SparseArray::cursor()} method should be used.
+	 *
+	 * @param n the number of dimensions in the SparseArray
+	 * @throws IllegalArgumentException if the number of dimensions is not 2
+	 */
 	public SparseLocalizingCursor(final int n) {
 		super(n);
 		if (n != 2)
-			throw new IllegalArgumentException("Only 2D images are supported");
+			throw new IllegalArgumentException("Only 2D sparse arrays are supported");
 
 		max = new long[]{0L, 0L};
 		img = null;
@@ -37,6 +55,16 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 		secondaryDim = 0;
 	}
 
+	/**
+	 * Constructor for the SparseLocalizingCursor class.
+	 * This cursor should not be used directly, but rather the
+	 * {@link SparseArray::cursor()} method should be used.
+	 *
+	 * @param img the SparseArray to be iterated over
+	 * @param leadingDimension the leading dimension of the SparseArray
+	 * @param fillValue the value to be returned when the cursor is not at a non-zero element
+	 * @throws IllegalArgumentException if the number of dimensions is not 2
+	 */
 	public SparseLocalizingCursor(final SparseArray<T,?> img, final int leadingDimension, final T fillValue) {
 		super(img.numDimensions());
 		if (n != 2)
@@ -89,6 +117,9 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 				&& indptrAccess.getLongPosition(0) == position[secondaryDim]);
 	}
 
+	/**
+	 * Advance to next non-zero element of the SparseArray.
+	 */
 	protected void advanceToNextNonzeroElement() {
 		if (indicesCursor.hasNext()) {
 			dataCursor.fwd();

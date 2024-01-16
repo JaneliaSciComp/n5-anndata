@@ -12,8 +12,11 @@ import net.imglib2.type.numeric.NumericType;
 
 /**
  * Factory for {@link SparseArray}s.
+ *
  * @param <T> type of data
  * @param <I> type of indices
+ *
+ * @author Michael Innerberger
  */
 public class SparseArrayFactory<
 		T extends NumericType<T> & NativeType<T>,
@@ -23,6 +26,13 @@ public class SparseArrayFactory<
 	protected final I indexType;
 
 
+	/**
+	 * Constructor for the SparseArrayFactory class.
+	 *
+	 * @param type an example of the type of data
+	 * @param indexType an example of the type of indices
+	 * @param leadingDimension the leading dimension
+	 */
 	protected SparseArrayFactory(final T type, final I indexType, final int leadingDimension) {
 		super(type);
 		this.leadingDimension = leadingDimension;
@@ -30,10 +40,12 @@ public class SparseArrayFactory<
 	}
 
 	@Override
+	@SuppressWarnings({"ResultOfMethodCallIgnored"})
 	public SparseArray<T, I> create(final long... dimensions) {
 		if (dimensions.length != 2)
 			throw new IllegalArgumentException("Only 2D images are supported");
 
+		// this will throw an exception if the dimensions are not valid, so the output is not needed
 		Dimensions.verify(dimensions);
 		final ArrayImg<T, ?> data = new ArrayImgFactory<>(type()).create(1);
 		final ArrayImg<I, ?> indices = new ArrayImgFactory<>(indexType).create(1);

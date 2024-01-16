@@ -11,10 +11,28 @@ import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.integer.LongType;
 
+/**
+ * Class representing a Compressed Sparse Column (CSC) matrix.
+ * This is a {@link SparseArray} where the leading dimension is the column dimension.
+ *
+ * @param <T> the type of the data values
+ * @param <I> the type of the indices
+ *
+ * @author Michael Innerberger
+ */
 public class CscMatrix<
 		T extends NumericType<T> & NativeType<T>,
 		I extends IntegerType<I> & NativeType<I>> extends SparseArray<T, I> {
 
+	/**
+	 * Constructor for the CsrMatrix class.
+	 *
+	 * @param numCols the number of columns
+	 * @param numRows the number of rows
+	 * @param data the data values
+	 * @param indices the row indices of the non-zero data values
+	 * @param indptr the column-index pointers
+	 */
     public CscMatrix(final long numCols, final long numRows, final Img<T> data, final Img<I> indices, final Img<I> indptr) {
         super(numCols, numRows, data, indices, indptr);
     }
@@ -42,6 +60,12 @@ public class CscMatrix<
 		return new SparseArrayFactory<>(data.getAt(0), indices.getAt(0), 1);
 	}
 
+	/**
+	 * Converts a given RandomAccessibleInterval into a CscMatrix.
+	 *
+	 * @param rai the RandomAccessibleInterval to be converted
+	 * @return a CscMatrix representing the given RandomAccessibleInterval
+	 */
 	public static <T extends NumericType<T> & NativeType<T>>
 	SparseArray<T, LongType> from(final RandomAccessibleInterval<T> rai) {
 		return convertToSparse(rai, 1);

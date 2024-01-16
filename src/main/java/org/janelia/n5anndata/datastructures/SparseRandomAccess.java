@@ -7,11 +7,22 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 
+/**
+ * RandomAccess for a SparseArray.
+ * Access for CSR and CSC matrices is almost the same, except for
+ * the leading dimension (i.e., if the indices array represents row
+ * or column indices).
+ *
+ * @param <T> the type of the data values in the SparseArray
+ * @param <I> the type of the indices in the SparseArray
+ *
+ * @author Michael Innerberger
+ */
 public class SparseRandomAccess<
         T extends NumericType<T> & NativeType<T>,
         I extends IntegerType<I> & NativeType<I>> extends AbstractLocalizable implements RandomAccess<T> {
 
-    protected final SparseArray<T, I> rai;
+    protected final SparseArray<T, I> sparse;
     protected final RandomAccess<T> dataAccess;
     protected final RandomAccess<I> indicesAccess;
     protected final RandomAccess<I> indptrAccess;
@@ -19,12 +30,21 @@ public class SparseRandomAccess<
     protected final int secondaryDim;
     protected final T fillValue;
 
-    public SparseRandomAccess(final SparseArray<T, I> rai, final int leadingDim) {
-        super(rai.numDimensions());
-        this.rai = rai;
-        this.dataAccess = rai.data.randomAccess();
-        this.indicesAccess = rai.indices.randomAccess();
-        this.indptrAccess = rai.indptr.randomAccess();
+
+    /**
+     * Constructor for the SparseRandomAccess class.
+     * This RandomAccess should not be used directly, but rather the
+     * {@link SparseArray::randomAccess()} method should be used.
+     *
+     * @param sparse the SparseArray to be accessed
+     * @param leadingDim the leading dimension of the SparseArray
+     */
+    public SparseRandomAccess(final SparseArray<T, I> sparse, final int leadingDim) {
+        super(sparse.numDimensions());
+        this.sparse = sparse;
+        this.dataAccess = sparse.data.randomAccess();
+        this.indicesAccess = sparse.indices.randomAccess();
+        this.indptrAccess = sparse.indptr.randomAccess();
         this.leadingDim = leadingDim;
         this.secondaryDim = 1 - leadingDim;
 
@@ -32,10 +52,17 @@ public class SparseRandomAccess<
         this.fillValue.setZero();
     }
 
+    /**
+     * Copy constructor for the SparseRandomAccess class.
+     * This RandomAccess should not be used directly, but rather the
+     * {@link SparseArray::randomAccess()} method should be used.
+     *
+     * @param ra the SparseRandomAccess to be copied
+     */
     public SparseRandomAccess(final SparseRandomAccess<T, I> ra) {
-        super(ra.rai.numDimensions());
+        super(ra.sparse.numDimensions());
 
-        this.rai = ra.rai;
+        this.sparse = ra.sparse;
         this.leadingDim = ra.leadingDim;
         this.secondaryDim = ra.secondaryDim;
         this.setPosition( ra );

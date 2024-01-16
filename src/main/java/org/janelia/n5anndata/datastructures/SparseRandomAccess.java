@@ -34,7 +34,7 @@ public class SparseRandomAccess<
     /**
      * Constructor for the SparseRandomAccess class.
      * This RandomAccess should not be used directly, but rather the
-     * {@link SparseArray::randomAccess()} method should be used.
+     * {@link SparseArray#randomAccess()} method should be used.
      *
      * @param sparse the SparseArray to be accessed
      * @param leadingDim the leading dimension of the SparseArray
@@ -54,8 +54,6 @@ public class SparseRandomAccess<
 
     /**
      * Copy constructor for the SparseRandomAccess class.
-     * This RandomAccess should not be used directly, but rather the
-     * {@link SparseArray::randomAccess()} method should be used.
      *
      * @param ra the SparseRandomAccess to be copied
      */

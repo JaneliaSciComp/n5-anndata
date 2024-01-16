@@ -35,7 +35,7 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 	/**
 	 * Constructor for the SparseLocalizingCursor class.
 	 * This cursor should not be used directly, but rather the
-	 * {@link SparseArray::cursor()} method should be used.
+	 * {@link SparseArray#cursor()} method should be used.
 	 *
 	 * @param n the number of dimensions in the SparseArray
 	 * @throws IllegalArgumentException if the number of dimensions is not 2
@@ -58,7 +58,7 @@ public class SparseLocalizingCursor<T extends NumericType<T> & NativeType<T>> ex
 	/**
 	 * Constructor for the SparseLocalizingCursor class.
 	 * This cursor should not be used directly, but rather the
-	 * {@link SparseArray::cursor()} method should be used.
+	 * {@link SparseArray#cursor()} method should be used.
 	 *
 	 * @param img the SparseArray to be iterated over
 	 * @param leadingDimension the leading dimension of the SparseArray

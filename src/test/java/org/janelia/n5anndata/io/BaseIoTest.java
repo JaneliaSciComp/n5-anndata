@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Named.named;
@@ -67,10 +68,18 @@ public class BaseIoTest {
 	}
 
 	protected static void deleteRecursively(final Path path) throws IOException {
-		Files.walk(path)
-				.sorted(Comparator.reverseOrder())
-				.map(Path::toFile)
-				.forEach(File::delete);
+		try (final Stream<Path> contents = Files.walk(path)) {
+			final Boolean allSucceeded = contents
+					.sorted(Comparator.reverseOrder())
+					.map(Path::toFile)
+					.map(File::delete)
+					.reduce(Boolean::logicalAnd).orElse(true);
+			if (!allSucceeded) {
+				throw new IOException("Could not delete all contents of " + path);
+			}
+		} catch (final IOException e) {
+			throw new IOException("Could not delete all contents of " + path, e);
+		}
 	}
 
 

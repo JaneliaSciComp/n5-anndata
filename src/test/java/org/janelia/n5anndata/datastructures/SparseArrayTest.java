@@ -88,10 +88,11 @@ public class SparseArrayTest {
 	@Test
 	public void iterating_exhausts_entries() {
 		int nEntries = 0;
-		for (final DoubleType entry : setupCsr()) {
+		for (final DoubleType ignored : setupCsr()) {
 			nEntries++;
 		}
-		assertEquals(90, nEntries);
+		final int expected = 90;
+		assertEquals(expected, nEntries);
 	}
 
 	protected static CsrMatrix<DoubleType, LongType> setupCsr() {

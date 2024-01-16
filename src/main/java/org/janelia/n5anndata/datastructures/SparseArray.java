@@ -46,11 +46,6 @@ abstract public class SparseArray<
             throw new IllegalArgumentException("Indptr array does not fit number of slices.");
     }
 
-    public static <T extends NumericType<T> & NativeType<T>> SparseArray<T, LongType>
-    convertToSparse(final Img<T> img) {
-        return convertToSparse(img, 0); // CSR per default
-    }
-
     protected static <T extends NumericType<T> & NativeType<T>> SparseArray<T, LongType>
     convertToSparse(final RandomAccessibleInterval<T> rai, final int leadingDimension) {
         if (leadingDimension != 0 && leadingDimension != 1)

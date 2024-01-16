@@ -1,11 +1,14 @@
 package org.janelia.n5anndata.io;
 
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.janelia.n5anndata.io.AnnDataFieldType.*;
+import static org.janelia.n5anndata.io.AnnDataFieldType.CSC_MATRIX;
+import static org.janelia.n5anndata.io.AnnDataFieldType.CSR_MATRIX;
+import static org.janelia.n5anndata.io.AnnDataFieldType.DATA_FRAME;
+import static org.janelia.n5anndata.io.AnnDataFieldType.DENSE_ARRAY;
+import static org.janelia.n5anndata.io.AnnDataFieldType.MAPPING;
 
 public enum AnnDataField {
 	X("X",
@@ -50,12 +53,7 @@ public enum AnnDataField {
 	}
 
 	public String getPath() {
-		return getPath("");
-	}
-
-	@Deprecated
-	public String getPath(final String subPath) {
-		return Paths.get(basePath, subPath).toString();
+		return basePath;
 	}
 
 	public boolean canBeA(final AnnDataFieldType type) {

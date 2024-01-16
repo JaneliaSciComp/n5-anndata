@@ -105,8 +105,8 @@ public class SparseRandomAccess<
 
     @Override
     public void setPosition(final long[] position) {
-        for (int d = 0; d < n; ++d) {
-            this.position[d] = position[d];
+		if (n >= 0) {
+            System.arraycopy(position, 0, this.position, 0, n);
         }
     }
 

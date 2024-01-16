@@ -12,9 +12,16 @@ import java.util.List;
 
 import static org.janelia.n5anndata.io.AnnDataFieldType.*;
 
+
+/**
+ * A Checker that performs checks on both type and dimension constraints.
+ *
+ * @author Michael Innerberger
+ */
 class StrictChecker implements Checker {
 	private static final List<AnnDataFieldType> ALLOWED_DATA_FRAME_TYPES = Arrays.asList(STRING_ARRAY, CATEGORICAL_ARRAY, DENSE_ARRAY);
 
+	@Override
 	public void check(final N5Reader reader, final AnnDataPath path, final AnnDataFieldType type, final long[] shape) {
 		final AnnDataPath parentPath = path.getParentPath();
 		final AnnDataFieldType parentType = AnnDataUtils.getFieldType(reader, parentPath);
@@ -44,6 +51,13 @@ class StrictChecker implements Checker {
 		}
 	}
 
+	/**
+	 * Checks type constraints for an array to be written.
+	 *
+	 * @param field the AnnDataField in which the array should be placed
+	 * @param type the AnnDataFieldType of the array to be written
+	 * @param parentType the type of the immediate parent of the target path
+	 */
 	protected boolean satisfiesTypeConstraints(final AnnDataField field, final AnnDataFieldType type, final AnnDataFieldType parentType) {
 		if (parentType == ANNDATA) {
 			return field.canBeA(type);
@@ -54,6 +68,14 @@ class StrictChecker implements Checker {
 		}
 	}
 
+	/**
+	 * Checks dimension constraints for an array to be written.
+	 *
+	 * @param field the AnnDataField in which the array should be placed
+	 * @param shape the shape of the array to be written
+	 * @param nObs the number of observations of the AnnData file
+	 * @param nVar the number of variables of the AnnData file
+	 */
 	protected boolean satisfiesDimensionConstraints(final AnnDataField field, final long[] shape, final long nObs, final long nVar) {
 		switch (field) {
 			case X: case LAYERS:
@@ -75,6 +97,12 @@ class StrictChecker implements Checker {
 		}
 	}
 
+	/**
+	 * Checks constraints for an array to be written to a dataframe (1D and fits the dataframe size).
+	 *
+	 * @param shape the shape of the array to be written
+	 * @param indexSize the number of variables of the dataframe
+	 */
 	protected boolean satisfiesDataFrameConstraints(final long[] shape, final long indexSize) {
 		return (is1D(shape) && shape[0] == indexSize);
 	}

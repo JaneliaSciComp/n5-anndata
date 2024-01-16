@@ -5,6 +5,12 @@ import org.janelia.n5anndata.io.AnnDataFieldType;
 import org.janelia.n5anndata.io.AnnDataPath;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
+
+/**
+ * A Checker that performs no checks (in particular, also doesn't read any data).
+ *
+ * @author Michael Innerberger
+ */
 class NoChecker extends StrictChecker {
 	@Override
 	public void check(final N5Reader reader, final AnnDataPath path, final AnnDataFieldType type, final long[] shape) {}

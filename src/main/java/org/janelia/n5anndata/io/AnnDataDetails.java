@@ -25,6 +25,16 @@ import java.util.stream.IntStream;
 import static org.janelia.n5anndata.io.AnnDataUtils.getDataFrameDatasetNames;
 import static org.janelia.n5anndata.io.AnnDataUtils.getFieldType;
 
+
+/**
+ * Utilities for reading and writing AnnData datasets. In contrast to
+ * {@link AnnDataUtils}, this class provides I/O methods for specific
+ * AnnDataTypes and does not perform any type checking.
+ * <p>
+ * For internal use only.
+ *
+ * @author Michael Innerberger
+ */
 class AnnDataDetails {
 	// encoding metadata
 	static final String ENCODING_KEY = "encoding-type";
@@ -47,6 +57,15 @@ class AnnDataDetails {
 	static final String CODES_DIR = "codes";
 
 
+	/**
+	 * Reads a sparse array from the given path. The sparse array is represented
+	 * by a group that contains three datasets: "data", "indices", and "indptr".
+	 *
+	 * @param reader The N5 reader to use.
+	 * @param path The path to the array.
+	 * @param constructor The constructor to use for creating the sparse array (CSR or CSC).
+	 * @return The sparse array.
+	 */
 	static <T extends NativeType<T> & RealType<T>, I extends NativeType<I> & IntegerType<I>>
 	SparseArray<T, I> readSparseArray(
 			final N5Reader reader,
@@ -61,6 +80,16 @@ class AnnDataDetails {
 		return constructor.apply(shape[1], shape[0], sparseData, indices, indptr);
 	}
 
+	/**
+	 * Reads a categorical list from the given path. The categorical list is
+	 * represented by a group that contains two datasets: "categories" (a string
+	 * array of unique category names) and "codes" (an integer array of category
+	 * indices).
+	 *
+	 * @param reader The N5 reader to use.
+	 * @param path The path to the list.
+	 * @return The denormalized categorical list.
+	 */
 	static List<String> readCategoricalList(final N5Reader reader, final AnnDataPath path) {
 		final List<String> categoryNames = N5StringUtils.open(reader, path.append(CATEGORIES_DIR).toString());
 		final Img<? extends IntegerType<?>> categories = N5Utils.open(reader, path.append(CODES_DIR).toString());
@@ -74,11 +103,25 @@ class AnnDataDetails {
 		return denormalizedNames;
 	}
 
+	/**
+	 * Sets the field type metadata of the data at the given path.
+	 *
+	 * @param writer The N5 writer to use.
+	 * @param path The path to the data.
+	 * @param type The field type to set.
+	 */
 	static void setFieldType(final N5Writer writer, final AnnDataPath path, final AnnDataFieldType type) {
 		writer.setAttribute(path.toString(), ENCODING_KEY, type.getEncoding());
 		writer.setAttribute(path.toString(), VERSION_KEY, type.getVersion());
 	}
 
+	/**
+	 * If the given path is part of a dataframe, adds the column name to the
+	 * column-order metadata.
+	 *
+	 * @param writer The N5 writer to use.
+	 * @param path The path to the dataset.
+	 */
 	static void conditionallyAddToDataFrame(final N5Writer writer, final AnnDataPath path) {
 		final AnnDataPath parent = path.getParentPath();
 
@@ -93,6 +136,18 @@ class AnnDataDetails {
 		}
 	}
 
+	/**
+	 * Writes a sparse array to the given path and converts between CSR and CSC
+	 * if necessary.
+	 *
+	 * @param writer The N5 writer to use.
+	 * @param path The path to write to.
+	 * @param data The data to write.
+	 * @param options The options to use.
+	 * @param type The field type of the data.
+	 * @throws ExecutionException If an error occurs during execution.
+	 * @throws InterruptedException If the thread is interrupted.
+	 */
 	static <T extends NativeType<T> & RealType<T>> void writeSparseArray(
 			final N5Writer writer,
 			final AnnDataPath path,
@@ -132,6 +187,17 @@ class AnnDataDetails {
 		writer.setAttribute(path.toString(), SHAPE_KEY, shape);
 	}
 
+	/**
+	 * Writes a categorical list to the given path. The categorical list is
+	 * represented by a group that contains two datasets: "categories" (a string
+	 * array of unique category names) and "codes" (an integer array of category
+	 * indices).
+	 *
+	 * @param data The data to write.
+	 * @param writer The N5 writer to use.
+	 * @param path The path to write to.
+	 * @param options The options to use.
+	 */
 	static void writeCategoricalList(final List<String> data, final N5Writer writer, final AnnDataPath path, final N5Options options) {
 		final List<String> uniqueElements = data.stream().distinct().collect(Collectors.toList());
 		final Map<String, Integer> elementToCode = IntStream.range(0, uniqueElements.size()).boxed().collect(Collectors.toMap(uniqueElements::get, i -> i));
@@ -145,6 +211,13 @@ class AnnDataDetails {
 		N5Utils.save(categories, writer, path.append(CODES_DIR).toString(), options.blockSize(), options.compression());
 	}
 
+	/**
+	 * Checks if the given path is part of a dataframe.
+	 *
+	 * @param reader The N5 reader to use.
+	 * @param path The path to check.
+	 * @return True if the path is part of a dataframe, false otherwise.
+	 */
 	static boolean isDataFrame(final N5Reader reader, final AnnDataPath path) {
 		final AnnDataFieldType type = getFieldType(reader, path);
 		final AnnDataPath indexPath = getDataFrameIndexPath(reader, path);
@@ -152,10 +225,23 @@ class AnnDataDetails {
 		return type == AnnDataFieldType.DATA_FRAME && reader.exists(indexPath.toString());
 	}
 
+	/**
+	 * Returns the path to the index of the dataframe at the given path. If the
+	 * "index" metadata is present, the path to the index is its value. If not,
+	 * the path to the index is the default ("_index").
+	 *
+	 * @param reader The N5 reader to use.
+	 * @param path The path to the dataframe.
+	 * @return The path to the index of the dataframe.
+	 */
 	static AnnDataPath getDataFrameIndexPath(final N5Reader reader, final AnnDataPath path) {
 		final String indexDir;
 		indexDir = reader.getAttribute(path.toString(), INDEX_KEY, String.class);
-		return path.append(indexDir);
+		if (indexDir == null) {
+			return path.append(DEFAULT_INDEX_DIR);
+		} else {
+			return path.append(indexDir);
+		}
 	}
 
 	static long[] flip(final long[] array) {
@@ -168,7 +254,9 @@ class AnnDataDetails {
 	}
 
 
-	// interface used to make reading sparse arrays more generic
+	/**
+	 * Nested interface used to make reading sparse arrays more generic.
+ 	 */
 	@FunctionalInterface
 	interface SparseArrayConstructor<
 			D extends NativeType<D> & RealType<D>,

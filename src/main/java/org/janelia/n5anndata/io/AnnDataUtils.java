@@ -208,10 +208,10 @@ public class AnnDataUtils {
 
         try {
             if (type == AnnDataFieldType.DENSE_ARRAY) {
-                if (options.exec == null) {
-                    N5Utils.save(data, writer, path.toString(), options.blockSize, options.compression);
+                if (options.hasExecutorService()) {
+                    N5Utils.save(data, writer, path.toString(), options.blockSize(), options.compression());
                 } else {
-                    N5Utils.save(data, writer, path.toString(), options.blockSize, options.compression, options.exec);
+                    N5Utils.save(data, writer, path.toString(), options.blockSize(), options.compression(), options.executorService());
                 }
             } else if (type == AnnDataFieldType.CSR_MATRIX || type == AnnDataFieldType.CSC_MATRIX) {
                 writeSparseArray(writer, path, data, options, type);
@@ -253,7 +253,7 @@ public class AnnDataUtils {
 
         switch (type) {
             case STRING_ARRAY:
-                N5StringUtils.save(data, writer, path.toString(), options.blockSize, options.compression);
+                N5StringUtils.save(data, writer, path.toString(), options.blockSize(), options.compression());
                 setFieldType(writer, path, type);
                 break;
             case CATEGORICAL_ARRAY:

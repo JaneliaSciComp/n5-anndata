@@ -117,15 +117,15 @@ class AnnDataDetails {
 		}
 
 		writer.createGroup(path.toString());
-		final int[] blockSize = (options.blockSize.length == 1) ? options.blockSize : new int[]{options.blockSize[0] * options.blockSize[1]};
-		if (options.exec == null) {
-			N5Utils.save(sparse.getDataArray(), writer, path.append(DATA_DIR).toString(), blockSize, options.compression);
-			N5Utils.save(sparse.getIndicesArray(), writer, path.append(INDICES_DIR).toString(), blockSize, options.compression);
-			N5Utils.save(sparse.getIndexPointerArray(), writer, path.append(INDPTR_DIR).toString(), blockSize, options.compression);
+		final int[] blockSize = options.blockSizeTo1D();
+		if (options.hasExecutorService()) {
+			N5Utils.save(sparse.getDataArray(), writer, path.append(DATA_DIR).toString(), blockSize, options.compression());
+			N5Utils.save(sparse.getIndicesArray(), writer, path.append(INDICES_DIR).toString(), blockSize, options.compression());
+			N5Utils.save(sparse.getIndexPointerArray(), writer, path.append(INDPTR_DIR).toString(), blockSize, options.compression());
 		} else {
-			N5Utils.save(sparse.getDataArray(), writer, path.append(DATA_DIR).toString(), blockSize, options.compression, options.exec);
-			N5Utils.save(sparse.getIndicesArray(), writer, path.append(INDICES_DIR).toString(), blockSize, options.compression, options.exec);
-			N5Utils.save(sparse.getIndexPointerArray(), writer, path.append(INDPTR_DIR).toString(), blockSize, options.compression, options.exec);
+			N5Utils.save(sparse.getDataArray(), writer, path.append(DATA_DIR).toString(), blockSize, options.compression(), options.executorService());
+			N5Utils.save(sparse.getIndicesArray(), writer, path.append(INDICES_DIR).toString(), blockSize, options.compression(), options.executorService());
+			N5Utils.save(sparse.getIndexPointerArray(), writer, path.append(INDPTR_DIR).toString(), blockSize, options.compression(), options.executorService());
 		}
 
 		final long[] shape = flip(data.dimensionsAsLongArray());
@@ -141,8 +141,8 @@ class AnnDataDetails {
 		setFieldType(writer, path, AnnDataFieldType.CATEGORICAL_ARRAY);
 		writer.setAttribute(path.toString(), ORDERED_KEY, false);
 
-		N5StringUtils.save(uniqueElements, writer, path.append(CATEGORIES_DIR).toString(), options.blockSize, options.compression);
-		N5Utils.save(categories, writer, path.append(CODES_DIR).toString(), options.blockSize, options.compression);
+		N5StringUtils.save(uniqueElements, writer, path.append(CATEGORIES_DIR).toString(), options.blockSize(), options.compression());
+		N5Utils.save(categories, writer, path.append(CODES_DIR).toString(), options.blockSize(), options.compression());
 	}
 
 	static boolean isDataFrame(final N5Reader reader, final AnnDataPath path) {

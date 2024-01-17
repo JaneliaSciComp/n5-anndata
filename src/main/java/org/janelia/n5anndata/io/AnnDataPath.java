@@ -4,14 +4,44 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+
+/**
+ * This class represents a path in an AnnData structure.
+ * Since the possible paths in an AnnData structure are restricted,
+ * this class ensures that only valid paths are used.
+ * <p>
+ * For example, using the path
+ * <pre>
+ *     final AnnDataPath path = new AnnDataPath(AnnDataField.OBS, "test1", "test2");
+ * </pre>
+ * in I/O operations is equivalent to accessing the following python field:
+ * <pre>
+ *     adata.obs["test1/test2"]
+ * </pre>
+ *
+ * @author Michael Innerberger
+ */
 public class AnnDataPath {
 
+	/**
+	 * The root path "/" of an AnnData structure. This has no field and no keys and
+	 * will throw an exception if any of the methods that require a field or keys are
+	 * called.
+	 * The purpose of this object is to consistently represent the root path as {@link AnnDataPath}.
+	 */
 	public static final AnnDataPath ROOT = new AnnDataRootPath();
 	private static final String SEPARATOR = "/";
 
 	private final AnnDataField field;
 	private final List<String> keys;
 
+
+	/**
+	 * Constructor that takes a field (e.g, obs, varm, ...) and a number of keys.
+	 *
+	 * @param field The field of the path.
+	 * @param keys The keys of the path.
+	 */
 	public AnnDataPath(final AnnDataField field, final String... keys) {
 		this(field, Arrays.asList(keys));
 	}
@@ -21,14 +51,25 @@ public class AnnDataPath {
 		this.keys = keys;
 	}
 
+	/**
+	 * Returns the field at the root of the path.
+	 *
+	 * @return The field of the path.
+	 */
 	public AnnDataField getField() {
 		return field;
 	}
 
+	/**
+	 * Returns the keys of the path as a string, separated by "/".
+	 *
+	 * @return The keys of the path as a string.
+	 */
 	public String keysAsString() {
 		return String.join(SEPARATOR, keys);
 	}
 
+	@Override
 	public String toString() {
 		if (keys.isEmpty()) {
 			return ROOT.toString() + field.toString();
@@ -37,6 +78,12 @@ public class AnnDataPath {
 		}
 	}
 
+	/**
+	 * Returns the parent path of the current path as a new AnnDataPath object.
+	 * If the current path is a field, the root path is returned.
+	 *
+	 * @return The parent path of the current path.
+	 */
 	public AnnDataPath getParentPath() {
 		if (keys.isEmpty()) {
 			return ROOT;
@@ -45,6 +92,12 @@ public class AnnDataPath {
 		}
 	}
 
+	/**
+	 * Returns the leaf of the path, i.e., the last key. If the path has no keys,
+	 * the field is returned as a string.
+	 *
+	 * @return The leaf of the path.
+	 */
 	public String getLeaf() {
 		if (keys.isEmpty()) {
 			return field.toString();
@@ -53,6 +106,12 @@ public class AnnDataPath {
 		}
 	}
 
+	/**
+	 * Appends additional keys to the path and returns a new AnnDataPath object.
+	 *
+	 * @param additionalKeys The keys to append.
+	 * @return A new path with the additional keys appended.
+	 */
 	public AnnDataPath append(final String... additionalKeys) {
 		return append(Arrays.asList(additionalKeys));
 	}
@@ -63,6 +122,13 @@ public class AnnDataPath {
 		return new AnnDataPath(field, newKeys);
 	}
 
+	/**
+	 * Creates a new path from a string, separated by "/".
+	 *
+	 * @param path The string to create the path from.
+	 * @return A new path created from the string.
+	 * @throws IllegalArgumentException If the path is not a valid path within an AnnData object.
+	 */
 	public static AnnDataPath fromString(final String path) {
 		if (path == null || path.isEmpty())
 			throw new IllegalArgumentException("Invalid path: " + path);

@@ -1,5 +1,15 @@
 package org.janelia.n5anndata.io;
 
+
+/**
+ * This enum represents the different types of fields in an AnnData structure.
+ * Each field type has an encoding and a version that are written to the groups
+ * and arrays stored on disk.
+ * <p>
+ * Note that, right now, scalars and nullable arrays are not supported.
+ *
+ * @author Michael Innerberger
+ */
 public enum AnnDataFieldType {
 
 	ANNDATA("anndata", "0.1.0"),
@@ -24,30 +34,61 @@ public enum AnnDataFieldType {
 		this.version = version;
 	}
 
+	/**
+	 * Returns the encoding of the field type.
+	 *
+	 * @return The encoding of the field type.
+	 */
 	public String getEncoding() {
 		return encoding;
 	}
 
+	/**
+	 * Returns the version of the field type.
+	 *
+	 * @return The version of the field type.
+	 */
 	public String getVersion() {
 		return version;
 	}
 
+	@Override
 	public String toString() {
 		return "encoding: " + encoding + ", version: " + version;
 	}
 
+	/**
+	 * Ensures that the given type is a numerical array type (dense, csr, or csc).
+	 *
+	 * @param type The type to check.
+	 * @throws AnnDataException If the type is not a numerical array type.
+	 */
 	public static void ensureNumericalArray(final AnnDataFieldType type) {
 		if (type != DENSE_ARRAY && type != CSR_MATRIX && type != CSC_MATRIX) {
 			throw new AnnDataException("Numerical array type expected, but got " + type);
 		}
 	}
 
+	/**
+	 * Ensures that the given type is a string array type (string or categorical).
+	 *
+	 * @param type The type to check.
+	 * @throws AnnDataException If the type is not a string array type.
+	 */
 	public static void ensureStringArray(final AnnDataFieldType type) {
 		if (type != STRING_ARRAY && type != CATEGORICAL_ARRAY) {
 			throw new AnnDataException("String array type expected, but got " + type);
 		}
 	}
 
+	/**
+	 * Returns the field type for the given encoding and version.
+	 *
+	 * @param encoding The encoding of the field type.
+	 * @param version The version of the field type.
+	 * @return The field type for the given encoding and version.
+	 * @throws IllegalArgumentException If no known field type matches the given encoding and version.
+	 */
 	public static AnnDataFieldType fromString(final String encoding, final String version) {
 		if (encoding == null || version == null)
 			return MISSING;

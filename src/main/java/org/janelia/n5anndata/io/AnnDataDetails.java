@@ -132,7 +132,7 @@ class AnnDataDetails {
 		if (! columnName.equals(INDEX_KEY)) {
 			final Set<String> existingData = getDataFrameDatasetNames(writer, parent);
 			existingData.add(columnName);
-			writer.setAttribute(parent.toString(), COLUMN_ORDER_KEY, existingData.toArray());
+			writer.setAttribute(parent.toString(), COLUMN_ORDER_KEY, existingData.toArray(new String[0]));
 		}
 	}
 

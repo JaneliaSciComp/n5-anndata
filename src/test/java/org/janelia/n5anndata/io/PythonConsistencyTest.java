@@ -6,8 +6,7 @@ import net.imglib2.type.numeric.integer.LongType;
 import net.imglib2.type.numeric.integer.ShortType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
-import org.janelia.saalfeldlab.n5.Compression;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.hdf5.N5HDF5Reader;
@@ -33,6 +32,9 @@ import java.util.List;
  If the test is not able to run, it will be skipped.
  */
 public class PythonConsistencyTest extends BaseIoTest {
+	private static final N5Options options1D = new N5Options(new int[] { 100 }, new GzipCompression(), null);
+	private static final N5Options options2D = new N5Options(new int[] { 100, 100 }, new GzipCompression(), null);
+
 	@Test
 	public void consistency_with_python()
 			throws IOException {
@@ -74,65 +76,57 @@ public class PythonConsistencyTest extends BaseIoTest {
 		final N5Reader reader = getReaderFor(pythonDataset);
 		final N5Writer writer = getWriterFor(javaDataset);
 
-		AnnDataPath path = new AnnDataPath(AnnDataField.X);
-		final Img<DoubleType> X = AnnDataUtils.readNumericalArray(reader, path);
-		N5Options options = getOptionsFor(reader, path);
-		AnnDataUtils.writeNumericalArray(X, writer, path, options, AnnDataFieldType.CSR_MATRIX);
+		if (! AnnDataUtils.isValidAnnData(reader)) {
+			throw new IllegalArgumentException("Invalid AnnData dataset: " + pythonDataset);
+		}
 
-		path = new AnnDataPath(AnnDataField.OBSP, "rnd");
-		final Img<DoubleType> csr = AnnDataUtils.readNumericalArray(reader, path);
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeNumericalArray(csr, writer, path, options, AnnDataFieldType.CSR_MATRIX);
-
-		path = new AnnDataPath(AnnDataField.VARP, "rnd");
-		final Img<ShortType> csc = AnnDataUtils.readNumericalArray(reader, path);
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeNumericalArray(csc, writer, path, options, AnnDataFieldType.CSC_MATRIX);
-
-		path = new AnnDataPath(AnnDataField.OBS, "_index");
+		AnnDataPath path = new AnnDataPath(AnnDataField.OBS, "_index");
 		final List<String> obs_names = AnnDataUtils.readStringArray(reader, path);
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeStringArray(obs_names, writer, path, options, AnnDataFieldType.STRING_ARRAY);
 
 		path = new AnnDataPath(AnnDataField.VAR, "_index");
 		final List<String> var_names = AnnDataUtils.readStringArray(reader, path);
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeStringArray(var_names, writer, path, options, AnnDataFieldType.STRING_ARRAY);
+
+		AnnDataUtils.initializeAnnData(obs_names, var_names, writer, options1D);
+
+		path = new AnnDataPath(AnnDataField.X);
+		final Img<DoubleType> X = AnnDataUtils.readNumericalArray(reader, path);
+		AnnDataUtils.writeNumericalArray(X, writer, path, options1D, AnnDataFieldType.CSR_MATRIX);
+
+		path = new AnnDataPath(AnnDataField.OBSP, "rnd");
+		final Img<DoubleType> csr = AnnDataUtils.readNumericalArray(reader, path);
+		AnnDataUtils.writeNumericalArray(csr, writer, path, options2D, AnnDataFieldType.CSR_MATRIX);
+
+		path = new AnnDataPath(AnnDataField.VARP, "rnd");
+		final Img<ShortType> csc = AnnDataUtils.readNumericalArray(reader, path);
+		AnnDataUtils.writeNumericalArray(csc, writer, path, options2D, AnnDataFieldType.CSC_MATRIX);
 
 		path = new AnnDataPath(AnnDataField.OBS, "cell_type");
 		final List<String> cell_type = AnnDataUtils.readStringArray(reader, path);
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeStringArray(cell_type, writer, path, options, AnnDataFieldType.CATEGORICAL_ARRAY);
+		AnnDataUtils.writeStringArray(cell_type, writer, path, options1D, AnnDataFieldType.CATEGORICAL_ARRAY);
 
 		path = new AnnDataPath(AnnDataField.VAR, "gene_stuff1");
 		final Img<IntType> genes1 = AnnDataUtils.readNumericalArray(reader, path);
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeNumericalArray(genes1, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
+		AnnDataUtils.writeNumericalArray(genes1, writer, path, options1D, AnnDataFieldType.DENSE_ARRAY);
 
 		path = new AnnDataPath(AnnDataField.VAR, "gene_stuff2");
 		final Img<LongType> genes2 = AnnDataUtils.readNumericalArray(reader, path);
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeNumericalArray(genes2, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
+		AnnDataUtils.writeNumericalArray(genes2, writer, path, options1D, AnnDataFieldType.DENSE_ARRAY);
 
-		path = new AnnDataPath(AnnDataField.OBS, "X_umap");
+		path = new AnnDataPath(AnnDataField.OBSM, "X_umap");
 		final Img<DoubleType> umap1 = AnnDataUtils.readNumericalArray(reader, path);
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeNumericalArray(umap1, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
+		AnnDataUtils.writeNumericalArray(umap1, writer, path, options2D, AnnDataFieldType.DENSE_ARRAY);
 
 		path = new AnnDataPath(AnnDataField.VARM, "X_umap");
 		final Img<DoubleType> umap2 = AnnDataUtils.readNumericalArray(reader, path);
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeNumericalArray(umap2, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
+		AnnDataUtils.writeNumericalArray(umap2, writer, path, options2D, AnnDataFieldType.DENSE_ARRAY);
 
 		path = new AnnDataPath(AnnDataField.UNS, "random");
 		final Img<DoubleType> uns = AnnDataUtils.readNumericalArray(reader, path);
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeNumericalArray(uns, writer, path, options, AnnDataFieldType.DENSE_ARRAY);
+		AnnDataUtils.writeNumericalArray(uns, writer, path, options1D, AnnDataFieldType.DENSE_ARRAY);
 
 		path = new AnnDataPath(AnnDataField.LAYERS, "log");
 		final Img<FloatType> log = AnnDataUtils.readNumericalArray(reader, path);
-		options = getOptionsFor(reader, path);
-		AnnDataUtils.writeNumericalArray(log, writer, path, options, AnnDataFieldType.CSR_MATRIX);
+		AnnDataUtils.writeNumericalArray(log, writer, path, options2D, AnnDataFieldType.CSR_MATRIX);
 	}
 
 	protected static N5Reader getReaderFor(final String dataset) {
@@ -153,12 +147,5 @@ public class PythonConsistencyTest extends BaseIoTest {
 		} else {
 			throw new IllegalArgumentException("Unknown file extension: " + dataset);
 		}
-	}
-
-	protected static N5Options getOptionsFor(final N5Reader reader, final AnnDataPath path) {
-		final DatasetAttributes attributes = reader.getDatasetAttributes(path.toString());
-		final int[] blockSize = attributes.getBlockSize();
-		final Compression compression = attributes.getCompression();
-		return new N5Options(blockSize, compression, EXECUTOR);
 	}
 }

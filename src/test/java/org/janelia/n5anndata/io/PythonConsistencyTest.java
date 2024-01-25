@@ -128,6 +128,7 @@ public class PythonConsistencyTest extends BaseIoTest {
 		final Img<FloatType> log = AnnDataUtils.readNumericalArray(reader, path);
 		AnnDataUtils.writeNumericalArray(log, writer, path, options2D, AnnDataFieldType.CSR_MATRIX);
 
+		AnnDataUtils.finalizeAnnData(writer);
 		reader.close();
 		writer.close();
 	}

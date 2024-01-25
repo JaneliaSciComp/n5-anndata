@@ -12,6 +12,7 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.hdf5.N5HDF5Reader;
+import org.janelia.saalfeldlab.n5.hdf5.N5HDF5Writer;
 import org.janelia.saalfeldlab.n5.imglib2.N5Utils;
 
 import java.io.IOException;
@@ -37,7 +38,8 @@ import static org.janelia.n5anndata.io.AnnDataDetails.*;
  * @author Michael Innerberger
  */
 public class AnnDataUtils {
-	private static Checker checker = Checker.STRICT;
+    private static final String HOUSEKEEPING_GROUP = "/__DATA_TYPES__";
+    private static Checker checker = Checker.STRICT;
 
 
     /**
@@ -105,6 +107,26 @@ public class AnnDataUtils {
             final N5Writer writer,
             final N5Options options) {
         initializeAnnData(obsNames, options, varNames, options, writer);
+    }
+
+    /**
+     * Finalizes writing to an AnnData container. In particular, JHDF5 sets up a housekeeping group
+     * (usually called "/__DATA_TYPES__") that causes anndata to fail when reading the container from
+     * Python.
+     * <p>
+     * It is recommended to call this method after every time an  AnnData container was accessed
+     * with an N5Writer.
+     *
+     * @param writer The N5 writer pointing to the AnnData container.
+     * @throws AnnDataException If the housekeeping group could not be removed.
+     */
+    public static void finalizeAnnData(final N5Writer writer) {
+        if (writer instanceof N5HDF5Writer) {
+            final boolean removalSuccessful = writer.remove(HOUSEKEEPING_GROUP);
+            if (! removalSuccessful) {
+                throw new AnnDataException("Could not remove housekeeping group for HDF5 container. File might not be readable from Python.");
+            }
+        }
     }
 
     /**

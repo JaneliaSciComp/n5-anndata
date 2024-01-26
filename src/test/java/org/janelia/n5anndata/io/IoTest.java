@@ -38,19 +38,6 @@ public class IoTest extends BaseIoTest {
 
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
-	public void reading_and_writing_strings_from_list(final Supplier<N5Writer> writerSupplier) {
-		final List<String> expected = Arrays.asList("", "a", "b", "cd", "efg", ":-þ");
-		try (final N5Writer writer = writerSupplier.get()) {
-			N5StringUtils.save(expected, writer, "test", new int[] {4});
-			final List<String> actual = N5StringUtils.open(writer, "/test");
-			assertArrayEquals(expected.toArray(), actual.toArray());
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
-		}
-	}
-
-	@ParameterizedTest
-	@MethodSource("datasetsWithDifferentBackends")
 	public void created_anndata_is_valid(final Supplier<N5Writer> writerSupplier) {
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);

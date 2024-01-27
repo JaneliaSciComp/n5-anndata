@@ -14,7 +14,9 @@ import org.janelia.saalfeldlab.n5.hdf5.N5HDF5Writer;
 import org.janelia.saalfeldlab.n5.zarr.N5ZarrReader;
 import org.janelia.saalfeldlab.n5.zarr.N5ZarrWriter;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,6 +24,8 @@ import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.jupiter.api.Named.named;
 
 /**
  To run this test, you need to have python installed and the following packages
@@ -35,23 +39,21 @@ public class PythonConsistencyTest extends BaseIoTest {
 	private static final N5Options options1D = new N5Options(new int[] { 100 }, new GzipCompression(), null);
 	private static final N5Options options2D = new N5Options(new int[] { 100, 100 }, new GzipCompression(), null);
 
-	@Test
-	public void consistency_with_python()
+	@ParameterizedTest
+	@MethodSource("extensions")
+	public void consistency_with_python(final String extension)
 			throws IOException {
-		final List<String> extensions = Arrays.asList(".h5ad", ".zarr");
-		for (final String ext : extensions) {
-			final String pythonDataset = Paths.get(testDirectoryPath.toString(), "data_python") + ext;
-			final String javaDataset = Paths.get(testDirectoryPath.toString(), "data_java") + ext;
+		final String pythonDataset = Paths.get(testDirectoryPath.toString(), "data_python") + extension;
+		final String javaDataset = Paths.get(testDirectoryPath.toString(), "data_java") + extension;
 
-			final boolean canExecutePython = executePythonScript("generate_test_dataset.py", pythonDataset);
-			Assumptions.assumeTrue(canExecutePython, "Could not execute python script, consistency test skipped.");
+		final boolean canExecutePython = executePythonScript("generate_test_dataset.py", pythonDataset);
+		Assumptions.assumeTrue(canExecutePython, "Could not execute python script, consistency test skipped.");
 
-			resaveDataset(pythonDataset, javaDataset);
+		resaveDataset(pythonDataset, javaDataset);
 
-			executePythonScript("validate_anndata.py", javaDataset);
-			deleteRecursively(Paths.get(pythonDataset));
-			deleteRecursively(Paths.get(javaDataset));
-		}
+		executePythonScript("validate_anndata.py", javaDataset);
+		deleteRecursively(Paths.get(pythonDataset));
+		deleteRecursively(Paths.get(javaDataset));
 	}
 
 	private static boolean executePythonScript(final String script, final String args) {
@@ -151,5 +153,11 @@ public class PythonConsistencyTest extends BaseIoTest {
 		} else {
 			throw new IllegalArgumentException("Unknown file extension: " + dataset);
 		}
+	}
+
+	protected static List<Named<String>> extensions() {
+		return Arrays.asList(
+				named("HDF5", ".h5ad"),
+				named("Zarr", ".zarr"));
 	}
 }

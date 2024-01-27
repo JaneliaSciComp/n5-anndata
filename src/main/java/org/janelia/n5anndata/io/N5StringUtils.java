@@ -56,11 +56,19 @@ public class N5StringUtils {
 		final int nChunks = (int) Math.ceil((double) size / chunkSize);
 
 		final List<String> data = new ArrayList<>(size);
+		int remaining = size;
 		for (int i = 0; i < nChunks; ++i) {
 			final DataBlock<?> chunk = reader.readBlock(path, attributes, i);
-			data.addAll(Arrays.asList((String[]) chunk.getData()));
+			data.addAll(relevantPart(chunk, Math.min(remaining, chunkSize)));
+			remaining -= chunkSize;
 		}
 		return data;
+	}
+
+
+	private static List<String> relevantPart(final DataBlock<?> chunk, final int nElements) {
+		final String[] array = Arrays.copyOfRange((String[]) chunk.getData(), 0, nElements);
+		return Arrays.asList(array);
 	}
 
 	/**
@@ -90,25 +98,38 @@ public class N5StringUtils {
 		}
 
 		final int size = data.size();
-		final DatasetAttributes attributes = new DatasetAttributes(new long[] {size}, blockSize, DataType.STRING, compression);
+		final DatasetAttributes attributes = new DatasetAttributes(new long[] { size }, blockSize, DataType.STRING, compression);
 		writer.createDataset(path, attributes);
 
 		final int chunkSize = blockSize[0];
 		final int nChunks = (int) Math.ceil((double) size / chunkSize);
 
-		final boolean isZarr = writer instanceof N5ZarrWriter;
 		final String[] chunkData = new String[chunkSize];
+		final boolean isZarr = writer instanceof N5ZarrWriter;
 		for (int i = 0; i < nChunks - 1; ++i) {
 			copy(data, i * chunkSize, (i + 1) * chunkSize, chunkData);
-			final DataBlock<?> chunk = isZarr ? new ZarrStringDataBlock(new int[] {chunkSize}, new long[] {i}, chunkData)
-					: new StringDataBlock(new int[] {chunkSize}, new long[] {i}, chunkData);
+			final DataBlock<?> chunk;
+			if (isZarr) {
+				chunk = new ZarrStringDataBlock(new int[] { chunkSize }, new long[] { i }, chunkData);
+			} else{
+				chunk = new StringDataBlock(new int[] { chunkSize }, new long[] { i }, chunkData);
+			}
 			writer.writeBlock(path, attributes, chunk);
 		}
-		final int remainderSize = size - (nChunks - 1) * chunkSize;
-		final String[] remainder = new String[remainderSize];
-		copy(data, (nChunks - 1) * chunkSize, size, remainder);
-		final DataBlock<?> chunk = isZarr ? new ZarrStringDataBlock(new int[] {chunkSize}, new long[] {nChunks - 1}, remainder)
-				: new StringDataBlock(new int[] {remainderSize}, new long[] {nChunks - 1}, remainder);
+
+		// take care of the last chunk (padded for zarr, truncated for hdf5, doesn't matter for n5)
+		final DataBlock<?> chunk;
+		final int start = (nChunks - 1) * chunkSize;
+		copy(data, start, size, chunkData);
+		if (isZarr) {
+			for (int i = size - start; i < chunkSize; ++i) {
+				chunkData[i] = "";
+			}
+			chunk = new ZarrStringDataBlock(new int[] { chunkSize }, new long[] { nChunks - 1 }, chunkData);
+		} else {
+			final String[] truncatedChunk = Arrays.copyOf(chunkData, size - start);
+			chunk = new StringDataBlock(new int[] { size - start }, new long[] { nChunks - 1 }, truncatedChunk);
+		}
 		writer.writeBlock(path, attributes, chunk);
 	}
 

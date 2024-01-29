@@ -49,13 +49,15 @@ def _check(condition, name):
         raise ValueError(f"Validation failed for '{name}'")
 
 
-def compare_anndatas(expected, actual):
+def compare_anndatas(expected, actual, string_decoder=lambda x: x, string_encoder=lambda x: x):
     """
     Compare two AnnData objects.
 
     Args:
         expected: AnnData object
         actual: AnnData object
+        string_decoder: function to decode strings (e.g. UTF-8)
+        string_encoder: function to encode strings (e.g. UTF-8)
 
     Throws:
         ValueError: if validation fails
@@ -71,11 +73,11 @@ def compare_anndatas(expected, actual):
     _check(np.array_equal(expected.var_names, actual.var_names), "var_names")
 
     # compare categoricals
-    _check(np.array_equal(expected.obs["cell_type"], actual.obs["cell_type"]), "obs['cell_type'] (categorical)")
+    _check(np.array_equal(expected.obs["cell_type"], [string_decoder(s) for s in actual.obs[string_encoder("cell_type")]]), "obs['cell_type'] (categorical)")
 
     # compare dense arrays
-    _check(np.allclose(expected.var["gene_stuff1"], actual.var["gene_stuff1"]), "var['gene_stuff1'] (int32)")
-    _check(np.allclose(expected.var["gene_stuff2"], actual.var["gene_stuff2"]), "var['gene_stuff2'] (int64)")
+    _check(np.allclose(expected.var["gene_stuff1"], actual.var[string_encoder("gene_stuff1")]), "var['gene_stuff1'] (int32)")
+    _check(np.allclose(expected.var["gene_stuff2"], actual.var[string_encoder("gene_stuff2")]), "var['gene_stuff2'] (int64)")
     _check(np.allclose(expected.obsm["X_umap"], actual.obsm["X_umap"]), "obsm['X_umap'] (float64)")
     _check(np.allclose(expected.varm["X_umap"], actual.varm["X_umap"]), "varm['X_umap'] (float64)")
 

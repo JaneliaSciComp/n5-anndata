@@ -60,12 +60,13 @@ public class SparseArrayFactory<
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public <S> ImgFactory<S> imgFactory(final S type) throws IncompatibleTypeException {
 		if (type instanceof NumericType && type instanceof NativeType)
-			return new SparseArrayFactory<>((NumericType & NativeType) type, indexType, leadingDimension);
+			return new SparseArrayFactory((NumericType & NativeType) type, indexType, leadingDimension);
 		else
 			throw new IncompatibleTypeException(this, type.getClass().getCanonicalName() + " does not implement NumericType & NativeType.");
 	}
 
 	@Override
+	@Deprecated
 	public Img<T> create(final long[] dim, final T type) {
 		return create(dim);
 	}

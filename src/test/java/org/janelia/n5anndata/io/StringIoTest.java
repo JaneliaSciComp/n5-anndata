@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 public class StringIoTest extends BaseIoTest {
@@ -24,8 +23,6 @@ public class StringIoTest extends BaseIoTest {
 			N5StringUtils.save(expected, writer, "test", new int[] {6});
 			final List<String> actual = N5StringUtils.open(writer, "/test");
 			assertArrayEquals(expected.toArray(), actual.toArray());
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 
@@ -37,8 +34,6 @@ public class StringIoTest extends BaseIoTest {
 			N5StringUtils.save(expected, writer, "test", new int[] {4});
 			final List<String> actual = N5StringUtils.open(writer, "/test");
 			assertArrayEquals(expected.toArray(), actual.toArray());
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 
@@ -50,8 +45,6 @@ public class StringIoTest extends BaseIoTest {
 			N5StringUtils.save(expected, writer, "test", new int[] { 100 });
 			final List<String> actual = N5StringUtils.open(writer, "/test");
 			assertArrayEquals(expected.toArray(), actual.toArray());
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 }

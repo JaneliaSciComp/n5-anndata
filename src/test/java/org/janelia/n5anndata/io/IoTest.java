@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -25,7 +26,6 @@ import java.util.function.Supplier;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 public class IoTest extends BaseIoTest {
@@ -41,28 +41,24 @@ public class IoTest extends BaseIoTest {
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			assertTrue(AnnDataUtils.isValidAnnData(writer));
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
-	public void read_and_write_dense_matrix_in_X(final Supplier<N5Writer> writerSupplier) {
+	public void read_and_write_dense_matrix_in_X(final Supplier<N5Writer> writerSupplier) throws IOException {
 		final AnnDataPath path = new AnnDataPath(AnnDataField.X);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			AnnDataUtils.writeNumericalArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertEquals(MATRIX, actual);
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
-	public void write_dense_as_csr_in_varm(final Supplier<N5Writer> writerSupplier) {
+	public void write_dense_as_csr_in_varm(final Supplier<N5Writer> writerSupplier) throws IOException {
 		final AnnDataPath path = new AnnDataPath(AnnDataField.VARM, "test");
 		final RandomAccessibleInterval<DoubleType> transposed = Views.permute(MATRIX, 1, 0);
 		try (final N5Writer writer = writerSupplier.get()) {
@@ -71,14 +67,12 @@ public class IoTest extends BaseIoTest {
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertInstanceOf(CsrMatrix.class, actual);
 			assertEquals(transposed, actual);
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
-	public void write_csr_as_csc_in_obsm(final Supplier<N5Writer> writerSupplier) {
+	public void write_csr_as_csc_in_obsm(final Supplier<N5Writer> writerSupplier) throws IOException {
 		final AnnDataPath path = new AnnDataPath(AnnDataField.OBSM, "test");
 		final Img<DoubleType> csr = CsrMatrix.from(MATRIX);
 		try (final N5Writer writer = writerSupplier.get()) {
@@ -87,14 +81,12 @@ public class IoTest extends BaseIoTest {
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertInstanceOf(CscMatrix.class, actual);
 			assertEquals(MATRIX, actual);
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
-	public void write_csc_as_dense_in_layers(final Supplier<N5Writer> writerSupplier) {
+	public void write_csc_as_dense_in_layers(final Supplier<N5Writer> writerSupplier) throws IOException {
 		final AnnDataPath path = new AnnDataPath(AnnDataField.LAYERS, "test");
 		final Img<DoubleType> csc = CscMatrix.from(MATRIX);
 		try (final N5Writer writer = writerSupplier.get()) {
@@ -103,14 +95,12 @@ public class IoTest extends BaseIoTest {
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			Assertions.assertEquals(AnnDataUtils.getFieldType(writer, path), AnnDataFieldType.DENSE_ARRAY);
 			assertEquals(MATRIX, actual);
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
-	public void write_floats_in_obsp(final Supplier<N5Writer> writerSupplier) {
+	public void write_floats_in_obsp(final Supplier<N5Writer> writerSupplier) throws IOException {
 		final AnnDataPath path = new AnnDataPath(AnnDataField.OBSP, "test");
 		final Img<FloatType> expected = ArrayImgs.floats(new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 4, 4);
 		try (final N5Writer writer = writerSupplier.get()) {
@@ -118,14 +108,12 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.writeNumericalArray(expected, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<FloatType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertEquals(expected, actual);
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
-	public void write_shorts_in_varp(final Supplier<N5Writer> writerSupplier) {
+	public void write_shorts_in_varp(final Supplier<N5Writer> writerSupplier) throws IOException {
 		final AnnDataPath path = new AnnDataPath(AnnDataField.VARP, "test");
 		final Img<ShortType> expected = ArrayImgs.shorts(new short[] {1, 2, 3, 4, 5, 6, 7, 8, 9}, 3, 3);
 		try (final N5Writer writer = writerSupplier.get()) {
@@ -133,8 +121,6 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.writeNumericalArray(expected, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<ShortType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertEquals(expected, actual);
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 
@@ -147,8 +133,6 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.writeStringArray(OBS_NAMES, writer, path, ARRAY_OPTIONS, AnnDataFieldType.STRING_ARRAY);
 			final List<String> actual = AnnDataUtils.readStringArray(writer, path);
 			assertIterableEquals(OBS_NAMES, actual);
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 
@@ -161,14 +145,12 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.writeStringArray(VAR_NAMES, writer, path, ARRAY_OPTIONS, AnnDataFieldType.CATEGORICAL_ARRAY);
 			final List<String> actual = AnnDataUtils.readStringArray(writer, path);
 			assertIterableEquals(VAR_NAMES, actual);
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 
 	@ParameterizedTest
 	@MethodSource("datasetsWithDifferentBackends")
-	public void nested_mappings_in_uns(final Supplier<N5Writer> writerSupplier) {
+	public void nested_mappings_in_uns(final Supplier<N5Writer> writerSupplier) throws IOException {
 		AnnDataPath path = new AnnDataPath(AnnDataField.UNS);
 		try (final N5Writer writer = writerSupplier.get()) {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
@@ -180,8 +162,6 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.writeNumericalArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertEquals(MATRIX, actual);
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 
@@ -200,8 +180,6 @@ public class IoTest extends BaseIoTest {
 			assertIterableEquals(OBS_NAMES, actualData);
 			final Set<String> datasets = AnnDataUtils.getDataFrameDatasetNames(writer, path);
 			assertIterableEquals(Collections.singletonList("data"), datasets);
-		} catch (final Exception e) {
-			fail("Could not write / read file: ", e);
 		}
 	}
 }

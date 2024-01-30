@@ -43,20 +43,29 @@ public class PythonConsistencyTest extends BaseIoTest {
 	@MethodSource("extensions")
 	public void consistency_with_python(final String extension)
 			throws IOException {
+
+		boolean canExecutePython;
+		try {
+			// by executing this no-op script, we make sure python and all dependencies are available
+			executePythonScript("utils.py", "");
+			canExecutePython = true;
+		} catch (final Exception e) {
+			canExecutePython = false;
+		}
+		Assumptions.assumeTrue(canExecutePython, "Could not find python and necessary dependencies, consistency test skipped.");
+
 		final String pythonDataset = Paths.get(testDirectoryPath.toString(), "data_python") + extension;
 		final String javaDataset = Paths.get(testDirectoryPath.toString(), "data_java") + extension;
 
-		final boolean canExecutePython = executePythonScript("generate_test_dataset.py", pythonDataset);
-		Assumptions.assumeTrue(canExecutePython, "Could not execute python script, consistency test skipped.");
-
+		executePythonScript("generate_test_dataset.py", pythonDataset);
 		resaveDataset(pythonDataset, javaDataset);
-
 		executePythonScript("validate_anndata.py", javaDataset);
+
 		deleteRecursively(Paths.get(pythonDataset));
 		deleteRecursively(Paths.get(javaDataset));
 	}
 
-	private static boolean executePythonScript(final String script, final String args) {
+	private static void executePythonScript(final String script, final String args) {
 		final String scriptBasePath = Paths.get("src", "test", "python").toString();
 		final String scriptPath = Paths.get(scriptBasePath, script).toString();
 		final String cmd = "python " + scriptPath + " " + args;
@@ -67,9 +76,8 @@ public class PythonConsistencyTest extends BaseIoTest {
 				throw new RuntimeException("Python script failed: " + cmd);
 			}
 			process.destroy();
-			return true;
 		} catch (final IOException | InterruptedException e) {
-			return false;
+			throw new RuntimeException("Python script failed: " + cmd, e);
 		}
 	}
 

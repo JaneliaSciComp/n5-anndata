@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Named.named;
 
 public class BaseIoTest {
 	protected static Path testDirectoryPath;
-	protected static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(4);
+	protected static ExecutorService EXECUTOR;
 	protected static final Compression COMPRESSION = new GzipCompression();
 	protected static final N5Options ARRAY_OPTIONS = new N5Options(new int[]{2}, COMPRESSION, EXECUTOR);
 	protected static final N5Options MATRIX_OPTIONS = new N5Options(new int[]{2, 2}, new GzipCompression(), EXECUTOR);
@@ -44,6 +44,7 @@ public class BaseIoTest {
 	public static void setup() throws IOException {
 		final Path currentDirectory = Paths.get("").toAbsolutePath();
 		testDirectoryPath = Files.createTempDirectory(currentDirectory, "tmp_test_dir");
+		EXECUTOR = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	}
 
 	@AfterAll

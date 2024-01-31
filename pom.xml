@@ -16,7 +16,7 @@
 
     <name>N5 AnnData Utilities</name>
     <description>Convenience functions for opening AnnData files.</description>
-    <url>https://github.com/minnerbe/n5-anndata</url>
+    <url>https://github.com/JaneliaSciComp/n5-anndata</url>
     <inceptionYear>2023</inceptionYear>
     <organization>
         <name>Janelia Scientific Computing Software</name>
@@ -24,7 +24,7 @@
     </organization>
     <licenses>
 		<license>
-			<name>Simplified BSD License</name>
+			<name>3-clause BSD License</name>
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
@@ -62,31 +62,34 @@
 	</mailingLists>
 
 	<scm>
-		<connection>scm:git:git://github.com/minnerbe/n5-anndata</connection>
-		<developerConnection>scm:git:git@github.com:minnerbe/n5-anndata</developerConnection>
+		<connection>scm:git:git://github.com/JaneliaSciComp/n5-anndata</connection>
+		<developerConnection>scm:git:git@github.com:JaneliaSciComp/n5-anndata</developerConnection>
 		<tag>HEAD</tag>
-		<url>https://github.com/minnerbe/n5-anndata</url>
+		<url>https://github.com/JaneliaSciComp/n5-anndata</url>
 	</scm>
 	<issueManagement>
 		<system>GitHub</system>
-		<url>https://github.com/minnerbe/n5-anndata/issues</url>
+		<url>https://github.com/JaneliaSciComp/n5-anndata/issues</url>
 	</issueManagement>
 	<ciManagement>
 		<system>GitHub Actions</system>
-		<url>https://github.com/minnerbe/n5-anndata/actions</url>
+		<url>https://github.com/JaneliaSciComp/n5-anndata/actions</url>
 	</ciManagement>
 
 	<properties>
 		<package-name>org.janelia.n5anndata</package-name>
 
-		<license.licenseName>bsd_2</license.licenseName>
+		<license.licenseName>bsd_3</license.licenseName>
 		<license.projectName>N5 AnnData Utilities</license.projectName>
-		<license.organizationName>Janelia Scientific Computing Software</license.organizationName>
-		<license.copyrightOwners>Michael Innerberger</license.copyrightOwners>
+		<license.organizationName>HHMI</license.organizationName>
+		<license.copyrightOwners>Howard Hughes Medical Institute</license.copyrightOwners>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+
+		<!-- NB: Deploy releases to the SciJava Maven repository. -->
+		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
     </properties>
 
 	<repositories>

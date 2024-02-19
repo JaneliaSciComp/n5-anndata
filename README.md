@@ -1,8 +1,9 @@
 [![Build Status](https://github.com/JaneliaSciComp/n5-anndata/actions/workflows/build.yml/badge.svg)](https://github.com/JaneliaSciComp/n5-anndata/actions/workflows/build.yml)
 
 # N5 AnnData Utilities
-Convenience functionality for reading from and writing to [AnnData](https://anndata.readthedocs.io/en/latest/) files with ImgLib2.
+Convenience functionality for reading from and writing to [AnnData](https://anndata.readthedocs.io/en/latest/) files with Java.
 By using the [N5 API](https://github.com/saalfeldlab/n5), the AnnData file can be stored as HDF5 (`.h5ad`), Zarr (`.zarr`), or in an N5 directory structure (`.n5ad`).
+By loading numerical arrays into ImgLib2 data structures, even arrays that don't fit into memory can be processed easily.
 Note that only HDF5 and Zarr are supported from the Python side, so far.
 
 

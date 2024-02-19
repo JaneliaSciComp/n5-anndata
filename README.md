@@ -49,7 +49,7 @@ final N5Options options2D = new N5Options(new int[]{512, 512}, new GzipCompressi
 AnnDataUtils.initializeAnnData(obs_names, var_names, writer, options1D);
 
 // write a numerical array to a 'layer'
-AnnDataUtils.writeNumericalArray(data, writer, "layer/log_scale",options2D, AnnDataFieldType.DENSE_ARRAY);
+AnnDataUtils.writeNumericalArray(data, writer, "layer/log_scale", options2D, AnnDataFieldType.DENSE_ARRAY);
 
 // create a dataframe in 'varm' with an index (List<String>) and write a categorical array to it
 AnnDataUtils.createDataFrame(index, writer, "varm/metadata", options1D);

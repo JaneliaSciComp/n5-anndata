@@ -110,6 +110,23 @@ public class AnnDataPath {
 		}
 	}
 
+	@Override
+	public boolean equals(final Object obj) {
+		if (this == obj){
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		final AnnDataPath that = (AnnDataPath) obj;
+		return field == that.field && keys.equals(that.keys);
+	}
+
+	@Override
+	public int hashCode() {
+		return 31 * field.hashCode() + keys.hashCode();
+	}
+
 	/**
 	 * Returns the parent path of the current path as a new AnnDataPath object.
 	 * If the current path is a field, the root path is returned.

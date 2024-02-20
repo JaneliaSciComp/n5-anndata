@@ -49,6 +49,14 @@ public class AnnDataPathTest {
 	}
 
 	@Test
+	public void same_paths_are_equal() {
+		final AnnDataPath path1 = new AnnDataPath(AnnDataField.OBS, "test", "foo");
+		final AnnDataPath path2 = new AnnDataPath(AnnDataField.OBS, "test", "foo");
+		assertEquals(path1, path2);
+		assertEquals(path1.hashCode(), path2.hashCode());
+	}
+
+	@Test
 	public void correct_path_from_string() {
 		final String expectedPath = "/obs/test/foo";
 		final AnnDataPath actualPath = AnnDataPath.fromString(expectedPath);

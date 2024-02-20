@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -195,6 +196,30 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.writeNumericalArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertImgEquals(MATRIX, actual);
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("datasetsWithDifferentBackends")
+	public void list_datasets(final Supplier<N5Writer> writerSupplier) throws IOException {
+		final AnnDataPath basePath = new AnnDataPath(AnnDataField.OBSM);
+		final AnnDataPath pathDense = basePath.append("test1");
+		final AnnDataPath pathCsr = basePath.append("test-2");
+		final AnnDataPath pathDataframe = basePath.append("test_3");
+		final AnnDataPath pathMapping = basePath.append("testIV");
+
+		try (final N5Writer writer = writerSupplier.get()) {
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
+			AnnDataUtils.writeNumericalArray(MATRIX, writer, pathDense, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			AnnDataUtils.writeNumericalArray(MATRIX, writer, pathCsr, MATRIX_OPTIONS, AnnDataFieldType.CSR_MATRIX);
+			AnnDataUtils.createDataFrame(OBS_NAMES, writer, pathDataframe, ARRAY_OPTIONS);
+			AnnDataUtils.createMapping(writer, pathMapping);
+			final Map<AnnDataPath, AnnDataFieldType> datasets = AnnDataUtils.listDatasets(writer, basePath);
+
+			assertEquals(AnnDataFieldType.DENSE_ARRAY, datasets.get(pathDense));
+			assertEquals(AnnDataFieldType.CSR_MATRIX, datasets.get(pathCsr));
+			assertEquals(AnnDataFieldType.DATA_FRAME, datasets.get(pathDataframe));
+			assertEquals(AnnDataFieldType.MAPPING, datasets.get(pathMapping));
 		}
 	}
 

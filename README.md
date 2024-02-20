@@ -86,8 +86,8 @@ For categorical arrays, conversion is done automatically.
 | `csc_matrix`      | `CscMatrix<T,I>`           | `CSC_MATRIX`        |
 | `dataframe`       | columns treated separately | `DATA_FRAME`        |
 | `dict`            | group in a container       | `MAPPING`           |
-| `categorical`     | `List<T>`                  | `CATEGORICAL_ARRAY` |
-| `string-array`    | `List<T>`                  | `STRING_ARRAY`      |
+| `categorical`     | `List<String>`             | `CATEGORICAL_ARRAY` |
+| `string-array`    | `List<String>`             | `STRING_ARRAY`      |
 
 
 ### Enforcing constraints

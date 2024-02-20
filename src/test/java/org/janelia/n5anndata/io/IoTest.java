@@ -58,6 +58,7 @@ import java.util.function.Supplier;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 public class IoTest extends BaseIoTest {
@@ -84,7 +85,7 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			AnnDataUtils.writeNumericalArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
-			assertEquals(MATRIX, actual);
+			assertImgEquals(MATRIX, actual);
 		}
 	}
 
@@ -98,7 +99,7 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.writeNumericalArray(transposed, writer, path, MATRIX_OPTIONS, AnnDataFieldType.CSR_MATRIX);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertInstanceOf(CsrMatrix.class, actual);
-			assertEquals(transposed, actual);
+			assertImgEquals(transposed, actual);
 		}
 	}
 
@@ -112,7 +113,7 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.writeNumericalArray(csr, writer, path, MATRIX_OPTIONS, AnnDataFieldType.CSC_MATRIX);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertInstanceOf(CscMatrix.class, actual);
-			assertEquals(MATRIX, actual);
+			assertImgEquals(MATRIX, actual);
 		}
 	}
 
@@ -126,7 +127,7 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.writeNumericalArray(csc, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			Assertions.assertEquals(AnnDataUtils.getFieldType(writer, path), AnnDataFieldType.DENSE_ARRAY);
-			assertEquals(MATRIX, actual);
+			assertImgEquals(MATRIX, actual);
 		}
 	}
 
@@ -139,7 +140,7 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			AnnDataUtils.writeNumericalArray(expected, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<FloatType> actual = AnnDataUtils.readNumericalArray(writer, path);
-			assertEquals(expected, actual);
+			assertImgEquals(expected, actual);
 		}
 	}
 
@@ -152,7 +153,7 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			AnnDataUtils.writeNumericalArray(expected, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<ShortType> actual = AnnDataUtils.readNumericalArray(writer, path);
-			assertEquals(expected, actual);
+			assertImgEquals(expected, actual);
 		}
 	}
 
@@ -193,7 +194,7 @@ public class IoTest extends BaseIoTest {
 			path = path.append("test3");
 			AnnDataUtils.writeNumericalArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
-			assertEquals(MATRIX, actual);
+			assertImgEquals(MATRIX, actual);
 		}
 	}
 

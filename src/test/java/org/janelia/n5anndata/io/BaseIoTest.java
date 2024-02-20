@@ -116,7 +116,7 @@ public class BaseIoTest {
 	}
 
 
-	protected static <T> void assertEquals(final RandomAccessibleInterval<T> expected, final Img<T> actual) {
+	protected static <T> void assertImgEquals(final RandomAccessibleInterval<T> expected, final Img<T> actual) {
 		assertArrayEquals(expected.dimensionsAsLongArray(), actual.dimensionsAsLongArray(), "Dimensions do not match.");
 		final Cursor<T> cursor = actual.cursor();
 		while (cursor.hasNext()) {

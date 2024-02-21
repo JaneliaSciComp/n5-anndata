@@ -49,8 +49,10 @@ import org.janelia.saalfeldlab.n5.imglib2.N5Utils;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -277,6 +279,44 @@ public class AnnDataUtils {
         final String encoding = reader.getAttribute(path.toString(), ENCODING_KEY, String.class);
         final String version = reader.getAttribute(path.toString(), VERSION_KEY, String.class);
         return AnnDataFieldType.fromString(encoding, version);
+    }
+
+    /**
+     * Creates a mapping of the datasets in the given path to their field types.
+     *
+     * @param reader The N5 reader to use.
+     * @param path The path to be investigated.
+     * @return A mapping of the present datasets to their field types.
+     */
+    public static Map<AnnDataPath, AnnDataFieldType> listDatasets(final N5Reader reader, final String path) {
+        return listDatasets(reader, AnnDataPath.fromString(path));
+    }
+
+    /**
+     * Creates a mapping of the datasets in the given path to their field types.
+     *
+     * @param reader The N5 reader to use.
+     * @param path The path to be investigated.
+     * @return A mapping of the present datasets to their field types.
+     */
+    public static Map<AnnDataPath, AnnDataFieldType> listDatasets(final N5Reader reader, final AnnDataPath path) {
+        if (! reader.exists(path.toString())) {
+            return new HashMap<>();
+        }
+
+        final AnnDataFieldType parentType = getFieldType(reader, path);
+        if (parentType != AnnDataFieldType.MAPPING && parentType != AnnDataFieldType.DATA_FRAME) {
+            return new HashMap<>();
+        }
+
+        final Map<AnnDataPath, AnnDataFieldType> datasets = new HashMap<>();
+        final String[] subfields = reader.list(path.toString());
+        for (final String field : subfields) {
+            final AnnDataPath subPath = path.append(field);
+            final AnnDataFieldType type = getFieldType(reader, subPath);
+            datasets.put(subPath, type);
+        }
+        return datasets;
     }
 
     /**

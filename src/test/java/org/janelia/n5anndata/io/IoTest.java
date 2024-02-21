@@ -52,12 +52,14 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 public class IoTest extends BaseIoTest {
@@ -84,7 +86,7 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			AnnDataUtils.writeNumericalArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
-			assertEquals(MATRIX, actual);
+			assertImgEquals(MATRIX, actual);
 		}
 	}
 
@@ -98,7 +100,7 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.writeNumericalArray(transposed, writer, path, MATRIX_OPTIONS, AnnDataFieldType.CSR_MATRIX);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertInstanceOf(CsrMatrix.class, actual);
-			assertEquals(transposed, actual);
+			assertImgEquals(transposed, actual);
 		}
 	}
 
@@ -112,7 +114,7 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.writeNumericalArray(csr, writer, path, MATRIX_OPTIONS, AnnDataFieldType.CSC_MATRIX);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			assertInstanceOf(CscMatrix.class, actual);
-			assertEquals(MATRIX, actual);
+			assertImgEquals(MATRIX, actual);
 		}
 	}
 
@@ -126,7 +128,7 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.writeNumericalArray(csc, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
 			Assertions.assertEquals(AnnDataUtils.getFieldType(writer, path), AnnDataFieldType.DENSE_ARRAY);
-			assertEquals(MATRIX, actual);
+			assertImgEquals(MATRIX, actual);
 		}
 	}
 
@@ -139,7 +141,7 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			AnnDataUtils.writeNumericalArray(expected, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<FloatType> actual = AnnDataUtils.readNumericalArray(writer, path);
-			assertEquals(expected, actual);
+			assertImgEquals(expected, actual);
 		}
 	}
 
@@ -152,7 +154,7 @@ public class IoTest extends BaseIoTest {
 			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
 			AnnDataUtils.writeNumericalArray(expected, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<ShortType> actual = AnnDataUtils.readNumericalArray(writer, path);
-			assertEquals(expected, actual);
+			assertImgEquals(expected, actual);
 		}
 	}
 
@@ -193,7 +195,31 @@ public class IoTest extends BaseIoTest {
 			path = path.append("test3");
 			AnnDataUtils.writeNumericalArray(MATRIX, writer, path, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
 			final Img<DoubleType> actual = AnnDataUtils.readNumericalArray(writer, path);
-			assertEquals(MATRIX, actual);
+			assertImgEquals(MATRIX, actual);
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("datasetsWithDifferentBackends")
+	public void list_datasets(final Supplier<N5Writer> writerSupplier) throws IOException {
+		final AnnDataPath basePath = new AnnDataPath(AnnDataField.OBSM);
+		final AnnDataPath pathDense = basePath.append("test1");
+		final AnnDataPath pathCsr = basePath.append("test-2");
+		final AnnDataPath pathDataframe = basePath.append("test_3");
+		final AnnDataPath pathMapping = basePath.append("testIV");
+
+		try (final N5Writer writer = writerSupplier.get()) {
+			AnnDataUtils.initializeAnnData(OBS_NAMES, VAR_NAMES, writer, ARRAY_OPTIONS);
+			AnnDataUtils.writeNumericalArray(MATRIX, writer, pathDense, MATRIX_OPTIONS, AnnDataFieldType.DENSE_ARRAY);
+			AnnDataUtils.writeNumericalArray(MATRIX, writer, pathCsr, MATRIX_OPTIONS, AnnDataFieldType.CSR_MATRIX);
+			AnnDataUtils.createDataFrame(OBS_NAMES, writer, pathDataframe, ARRAY_OPTIONS);
+			AnnDataUtils.createMapping(writer, pathMapping);
+			final Map<AnnDataPath, AnnDataFieldType> datasets = AnnDataUtils.listDatasets(writer, basePath);
+
+			assertEquals(AnnDataFieldType.DENSE_ARRAY, datasets.get(pathDense));
+			assertEquals(AnnDataFieldType.CSR_MATRIX, datasets.get(pathCsr));
+			assertEquals(AnnDataFieldType.DATA_FRAME, datasets.get(pathDataframe));
+			assertEquals(AnnDataFieldType.MAPPING, datasets.get(pathMapping));
 		}
 	}
 

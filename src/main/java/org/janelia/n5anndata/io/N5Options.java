@@ -113,7 +113,7 @@ public class N5Options {
 	 * @return true if executor service is set, false otherwise
 	 */
 	public boolean hasExecutorService() {
-		return (exec == null);
+		return (exec != null);
 	}
 
 	/**

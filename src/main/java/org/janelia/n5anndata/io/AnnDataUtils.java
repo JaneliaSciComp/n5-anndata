@@ -478,9 +478,9 @@ public class AnnDataUtils {
         try {
             if (type == AnnDataFieldType.DENSE_ARRAY) {
                 if (options.hasExecutorService()) {
-                    N5Utils.save(data, writer, path.toString(), options.blockSize(), options.compression());
-                } else {
                     N5Utils.save(data, writer, path.toString(), options.blockSize(), options.compression(), options.executorService());
+                } else {
+                    N5Utils.save(data, writer, path.toString(), options.blockSize(), options.compression());
                 }
             } else if (type == AnnDataFieldType.CSR_MATRIX || type == AnnDataFieldType.CSC_MATRIX) {
                 writeSparseArray(writer, path, data, options, type);
